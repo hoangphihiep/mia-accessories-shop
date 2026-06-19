@@ -82,4 +82,10 @@ public class OrderService {
         // 4. Lưu đơn hàng (CascadeType.ALL sẽ tự động lưu luôn các OrderDetail bên trong)
         return orderRepository.save(order);
     }
+
+    public List<Order> getUserOrders(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng đăng nhập"));
+        return orderRepository.findByUserId(user.getId());
+    }
 }
