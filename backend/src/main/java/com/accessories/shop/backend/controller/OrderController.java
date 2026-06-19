@@ -18,4 +18,10 @@ public class OrderController {
     public ResponseEntity<Order> placeOrder(@RequestBody OrderRequest request) {
         return ResponseEntity.ok(orderService.placeOrder(request));
     }
+
+    @GetMapping("/my-orders")
+    public ResponseEntity<?> getMyOrders(org.springframework.security.core.Authentication authentication) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(orderService.getUserOrders(email));
+    }
 }
