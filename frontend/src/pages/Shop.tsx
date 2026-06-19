@@ -1,24 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Filter, ChevronDown } from 'lucide-react';
-
-const MOCK_PRODUCTS = [
-  { id: 1, name: 'Minimalist Silver Ring', price: '450,000đ', category: 'Rings', image: 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80&w=800' },
-  { id: 2, name: 'Classic Gold Chain', price: '850,000đ', category: 'Necklaces', image: 'https://images.unsplash.com/photo-1599643478514-4a4e0f1523bb?auto=format&fit=crop&q=80&w=800' },
-  { id: 3, name: 'Pearl Drop Earrings', price: '320,000đ', category: 'Earrings', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80&w=800' },
-  { id: 4, name: 'Engraved Cuff Bracelet', price: '550,000đ', category: 'Bracelets', image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&q=80&w=800' },
-  { id: 5, name: 'Geometric Studs', price: '250,000đ', category: 'Earrings', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80&w=800' },
-  { id: 6, name: 'Chunky Signet Ring', price: '500,000đ', category: 'Rings', image: 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80&w=800' },
-];
+import api from '../services/api';
 
 export default function Shop() {
   const [activeCategory, setActiveCategory] = useState('All');
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await api.get('/products');
+        setProducts(response.data);
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const categories = ['All', 'Rings', 'Necklaces', 'Earrings', 'Bracelets'];
 
   const filteredProducts = activeCategory === 'All' 
-    ? MOCK_PRODUCTS 
-    : MOCK_PRODUCTS.filter(p => p.category === activeCategory);
+    ? products 
+    : products.filter(p => p.category?.name === activeCategory || p.category === activeCategory);
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -72,26 +80,41 @@ export default function Shop() {
 
         {/* Product Grid */}
         <div className="flex-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProducts.map(product => (
-              <Link to={`/product/${product.id}`} key={product.id} className="group cursor-pointer">
-                <div className="relative aspect-[4/5] bg-gray-100 mb-4 overflow-hidden">
-                  <img 
-                    src={product.image} 
-                    alt={product.name} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <button className="w-full bg-white text-primary py-3 text-sm font-bold uppercase tracking-wider hover:bg-gray-100 transition-colors">
-                      Quick Add
-                    </button>
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-20 text-gray-500">
+              No products found.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredProducts.map(product => (
+                <Link to={`/product/${product.id}`} key={product.id} className="group cursor-pointer">
+                  <div className="relative aspect-[4/5] bg-gray-100 mb-4 overflow-hidden">
+                    {/* Giả sử API trả về mảng images, hoặc dùng ảnh placeholder nếu ko có */}
+                    <img 
+                      src={product.images && product.images.length > 0 ? product.images[0].url : 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80&w=800'} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <button className="w-full bg-white text-primary py-3 text-sm font-bold uppercase tracking-wider hover:bg-gray-100 transition-colors">
+                        Quick Add
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <h3 className="font-bold text-lg">{product.name}</h3>
-                <p className="text-gray-500">{product.price}</p>
-              </Link>
-            ))}
-          </div>
+                  <h3 className="font-bold text-lg truncate">{product.name}</h3>
+                  <p className="text-gray-500">
+                    {product.variants && product.variants.length > 0 
+                      ? product.variants[0].price.toLocaleString('vi-VN') + 'đ' 
+                      : 'Liên hệ'}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

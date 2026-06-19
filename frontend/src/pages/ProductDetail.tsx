@@ -1,29 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Star, Minus, Plus, ShoppingCart } from 'lucide-react';
+import api from '../services/api';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariant, setSelectedVariant] = useState('Silver');
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  const [activeImage, setActiveImage] = useState<string>('');
 
-  // Giả lập dữ liệu sản phẩm
-  const product = {
-    id,
-    name: 'Minimalist Silver Ring',
-    price: '450,000đ',
-    description: 'A timeless piece of jewelry crafted from premium 925 sterling silver. This minimalist ring is designed for everyday wear, offering a sleek and elegant look that complements any outfit.',
-    images: [
-      'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1599643478514-4a4e0f1523bb?auto=format&fit=crop&q=80&w=800'
-    ],
-    variants: ['Silver', 'Gold', 'Rose Gold'],
-    rating: 4.8,
-    reviewsCount: 124,
-    inStock: true
-  };
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await api.get(`/products/${id}`);
+        setProduct(response.data);
+        if (response.data.variants && response.data.variants.length > 0) {
+          setSelectedVariant(response.data.variants[0]);
+        }
+        if (response.data.images && response.data.images.length > 0) {
+          setActiveImage(response.data.images[0].url);
+        } else {
+          setActiveImage('https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80&w=800');
+        }
+      } catch (error) {
+        console.error('Failed to fetch product:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [id]);
 
-  const [activeImage, setActiveImage] = useState(product.images[0]);
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return <div className="text-center py-20">Product not found.</div>;
+  }
+
+  const fallbackImages = ['https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80&w=800'];
+  const images = product.images?.length > 0 ? product.images.map((img: any) => img.url) : fallbackImages;
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -40,7 +63,7 @@ export default function ProductDetail() {
         {/* Images */}
         <div className="w-full md:w-1/2 flex gap-4">
           <div className="flex flex-col gap-4 w-20 flex-shrink-0">
-            {product.images.map((img, idx) => (
+            {images.map((img: string, idx: number) => (
               <button 
                 key={idx} 
                 onClick={() => setActiveImage(img)}
@@ -67,29 +90,33 @@ export default function ProductDetail() {
               <Star size={18} fill="currentColor" />
               <Star size={18} fill="currentColor" className="text-gray-300" />
             </div>
-            <span className="text-sm text-gray-500 font-bold">{product.reviewsCount} Reviews</span>
+            <span className="text-sm text-gray-500 font-bold">4.8 Rating</span>
           </div>
 
-          <p className="text-2xl font-light mb-8">{product.price}</p>
-          <p className="text-gray-600 mb-8 leading-relaxed">{product.description}</p>
+          <p className="text-2xl font-light mb-8">
+            {selectedVariant ? selectedVariant.price.toLocaleString('vi-VN') + 'đ' : 'Liên hệ'}
+          </p>
+          <p className="text-gray-600 mb-8 leading-relaxed">{product.description || 'No description available.'}</p>
 
           {/* Variants */}
-          <div className="mb-8">
-            <h3 className="font-bold uppercase tracking-widest text-sm mb-4">Color</h3>
-            <div className="flex gap-4">
-              {product.variants.map(variant => (
-                <button
-                  key={variant}
-                  onClick={() => setSelectedVariant(variant)}
-                  className={`px-6 py-3 border text-sm font-bold uppercase tracking-wider transition-colors ${
-                    selectedVariant === variant ? 'border-primary bg-primary text-white' : 'border-gray-300 text-gray-500 hover:border-gray-500'
-                  }`}
-                >
-                  {variant}
-                </button>
-              ))}
+          {product.variants && product.variants.length > 0 && (
+            <div className="mb-8">
+              <h3 className="font-bold uppercase tracking-widest text-sm mb-4">Mẫu sản phẩm</h3>
+              <div className="flex flex-wrap gap-4">
+                {product.variants.map((variant: any) => (
+                  <button
+                    key={variant.id}
+                    onClick={() => setSelectedVariant(variant)}
+                    className={`px-6 py-3 border text-sm font-bold uppercase tracking-wider transition-colors ${
+                      selectedVariant?.id === variant.id ? 'border-primary bg-primary text-white' : 'border-gray-300 text-gray-500 hover:border-gray-500'
+                    }`}
+                  >
+                    {variant.name} (Tồn: {variant.stockQuantity})
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center gap-4 mb-8">
@@ -110,9 +137,9 @@ export default function ProductDetail() {
           </div>
 
           <div className="border-t pt-8 text-sm text-gray-500 space-y-2">
-            <p><strong className="text-primary uppercase">SKU:</strong> MIA-{product.id}-001</p>
-            <p><strong className="text-primary uppercase">Availability:</strong> {product.inStock ? 'In Stock' : 'Out of Stock'}</p>
-            <p><strong className="text-primary uppercase">Shipping:</strong> Free shipping on orders over 1,000,000đ</p>
+            <p><strong className="text-primary uppercase">SKU:</strong> MIA-{product.id}</p>
+            <p><strong className="text-primary uppercase">Category:</strong> {product.category?.name || 'N/A'}</p>
+            <p><strong className="text-primary uppercase">Material:</strong> {product.material?.name || 'N/A'}</p>
           </div>
         </div>
       </div>
