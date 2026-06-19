@@ -20,6 +20,7 @@ public class ProductVariant {
     // Mẫu này thuộc về Sản phẩm nào
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"variants", "hibernateLazyInitializer", "handler"})
     private Product product;
 
     // Tên của mẫu (Ví dụ: Mẫu A, Mẫu B, Mẫu Đứng, Mẫu Ngồi...)

@@ -24,5 +24,6 @@ public class Material {
     private String slug;
 
     @OneToMany(mappedBy = "material", fetch = FetchType.LAZY)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"material", "hibernateLazyInitializer", "handler"})
     private List<Product> products;
 }

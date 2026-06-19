@@ -25,22 +25,21 @@ public class ProductController {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
-    // Tạo sản phẩm: POST http://localhost:8080/api/v1/products?categoryId=1&materialId=1
+    // Tạo sản phẩm: POST http://localhost:8080/api/v1/products
     @PostMapping
-    public ResponseEntity<Product> createProduct(
-            @RequestBody Product product,
-            @RequestParam Long categoryId,
-            @RequestParam Long materialId) {
+    public ResponseEntity<Product> createProduct(@RequestBody Product product) {
+        Long categoryId = product.getCategory() != null ? product.getCategory().getId() : null;
+        Long materialId = product.getMaterial() != null ? product.getMaterial().getId() : null;
         return ResponseEntity.ok(productService.createProduct(product, categoryId, materialId));
     }
 
-    // Cập nhật: PUT http://localhost:8080/api/v1/products/{id}?categoryId=1&materialId=1
+    // Cập nhật: PUT http://localhost:8080/api/v1/products/{id}
     @PutMapping("/{id}")
     public ResponseEntity<Product> updateProduct(
             @PathVariable Long id,
-            @RequestBody Product productDetails,
-            @RequestParam Long categoryId,
-            @RequestParam Long materialId) {
+            @RequestBody Product productDetails) {
+        Long categoryId = productDetails.getCategory() != null ? productDetails.getCategory().getId() : null;
+        Long materialId = productDetails.getMaterial() != null ? productDetails.getMaterial().getId() : null;
         return ResponseEntity.ok(productService.updateProduct(id, productDetails, categoryId, materialId));
     }
 

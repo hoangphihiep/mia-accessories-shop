@@ -26,17 +26,16 @@ public class ProductVariantController {
     }
 
     @PostMapping
-    public ResponseEntity<ProductVariant> createVariant(
-            @RequestBody ProductVariant variant,
-            @RequestParam Long productId) {
+    public ResponseEntity<ProductVariant> createVariant(@RequestBody ProductVariant variant) {
+        Long productId = variant.getProduct() != null ? variant.getProduct().getId() : null;
         return ResponseEntity.ok(productVariantService.createVariant(variant, productId));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ProductVariant> updateVariant(
             @PathVariable Long id,
-            @RequestBody ProductVariant variantDetails,
-            @RequestParam Long productId) {
+            @RequestBody ProductVariant variantDetails) {
+        Long productId = variantDetails.getProduct() != null ? variantDetails.getProduct().getId() : null;
         return ResponseEntity.ok(productVariantService.updateVariant(id, variantDetails, productId));
     }
     
