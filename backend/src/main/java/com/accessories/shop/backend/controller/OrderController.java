@@ -24,4 +24,9 @@ public class OrderController {
         String email = authentication.getName();
         return ResponseEntity.ok(orderService.getUserOrders(email));
     }
+
+    @GetMapping("/track")
+    public ResponseEntity<?> trackOrders(@RequestParam String phone) {
+        return ResponseEntity.ok(orderService.trackOrdersByPhone(phone));
+    }
 }

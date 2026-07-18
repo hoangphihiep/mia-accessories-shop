@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Star, Minus, Plus, ShoppingCart } from 'lucide-react';
 import api from '../services/api';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -130,7 +135,34 @@ export default function ProductDetail() {
               </button>
             </div>
             
-            <button className="flex-1 h-14 bg-primary text-white font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors">
+            <button 
+              onClick={() => {
+                if (!isAuthenticated) {
+                  alert('Vui lòng đăng nhập để sử dụng giỏ hàng!');
+                  navigate('/login');
+                  return;
+                }
+                if (!selectedVariant) {
+                  alert('Vui lòng chọn mẫu sản phẩm');
+                  return;
+                }
+                if (selectedVariant.stockQuantity < quantity) {
+                  alert('Sản phẩm không đủ số lượng trong kho');
+                  return;
+                }
+                addToCart({
+                  variantId: selectedVariant.id,
+                  productId: product.id,
+                  name: product.name,
+                  price: selectedVariant.price,
+                  quantity: quantity,
+                  variantName: selectedVariant.name,
+                  image: activeImage
+                });
+                alert('Đã thêm vào giỏ hàng!');
+              }}
+              className="flex-1 h-14 bg-primary text-white font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
+            >
               <ShoppingCart size={20} />
               Add to Cart
             </button>
