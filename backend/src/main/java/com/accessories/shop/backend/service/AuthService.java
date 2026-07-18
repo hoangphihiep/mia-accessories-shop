@@ -75,4 +75,12 @@ public class AuthService {
                 .role(user.getRole().getName())
                 .build();
     }
+
+    public java.util.Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    public void saveUser(User user) {
+        userRepository.save(user);
+    }
 }

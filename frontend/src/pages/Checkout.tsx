@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { cartItems, cartTotal, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -17,19 +19,23 @@ export default function Checkout() {
     paymentMethod: 'COD'
   });
 
-  // Giả lập giỏ hàng (Trong thực tế sẽ lấy từ Context/Redux)
-  const cartItems = [
-    { id: 1, variantId: 1, name: 'Minimalist Silver Ring', price: 450000, quantity: 1, variant: 'Silver' }
-  ];
-  const subtotal = 450000;
+  useEffect(() => {
+    if (!isAuthenticated) {
+      alert('Vui lòng đăng nhập để đặt hàng!');
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
+
+  if (!isAuthenticated) return null;
+
+  const subtotal = cartTotal;
   const shipping = 30000;
   const total = subtotal + shipping;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập để đặt hàng!');
-      navigate('/login');
+    if (cartItems.length === 0) {
+      alert('Giỏ hàng của bạn đang trống!');
       return;
     }
     
@@ -54,10 +60,12 @@ export default function Checkout() {
           amount: total,
           bankCode: ''
         });
+        clearCart();
         window.location.href = paymentResponse.data.paymentUrl;
       } else {
+        clearCart();
         alert('Đặt hàng thành công!');
-        navigate('/');
+        navigate('/payment-success');
       }
     } catch (error) {
       console.error('Lỗi khi đặt hàng:', error);
@@ -177,15 +185,15 @@ export default function Checkout() {
             <h2 className="text-xl font-black uppercase tracking-widest mb-6">Order Items</h2>
             
             {cartItems.map(item => (
-              <div key={item.id} className="space-y-4 mb-6 border-b pb-6">
+              <div key={item.variantId} className="space-y-4 mb-6 border-b pb-6">
                 <div className="flex items-center gap-4">
                   <div className="relative">
-                    <img src="https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80&w=200" className="w-16 h-20 object-cover" />
+                    <img src={item.image} className="w-16 h-20 object-cover" />
                     <span className="absolute -top-2 -right-2 bg-gray-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold">{item.quantity}</span>
                   </div>
                   <div className="flex-1">
                     <h4 className="font-bold text-sm">{item.name}</h4>
-                    <p className="text-xs text-gray-500">{item.variant}</p>
+                    <p className="text-xs text-gray-500">{item.variantName}</p>
                   </div>
                   <span className="font-bold text-sm">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</span>
                 </div>

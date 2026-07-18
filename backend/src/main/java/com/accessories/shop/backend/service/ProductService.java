@@ -19,7 +19,10 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
     private final MaterialRepository materialRepository;
 
-    public List<Product> getAllProducts() {
+    public List<Product> getAllProducts(String search) {
+        if (search != null && !search.trim().isEmpty()) {
+            return productRepository.findByNameContainingIgnoreCase(search);
+        }
         return productRepository.findAll();
     }
 

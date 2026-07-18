@@ -34,4 +34,15 @@ public class ReviewService {
     public List<Review> getProductReviews(Long productId) {
         return reviewRepository.findByProductIdAndIsActiveTrue(productId);
     }
+
+    public List<Review> getAllReviews() {
+        return reviewRepository.findAll();
+    }
+
+    public Review toggleReviewStatus(Long reviewId, Boolean isActive) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+        review.setIsActive(isActive);
+        return reviewRepository.save(review);
+    }
 }

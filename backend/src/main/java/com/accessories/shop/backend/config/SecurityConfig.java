@@ -30,6 +30,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         // Mở cửa cho Khách hàng xem danh sách Sản phẩm, Thể loại, Chất liệu
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**", "/api/v1/products/**", "/api/v1/materials/**", "/api/v1/variants/**").permitAll()
+                        // Cho phép tra cứu đơn hàng không cần đăng nhập
+                        .requestMatchers(HttpMethod.GET, "/api/v1/orders/track").permitAll()
+                        // Cho phép Admin và Staff
+                        .requestMatchers("/api/v1/admin/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_STAFF")
                         // Tất cả các request còn lại bắt buộc phải có Token (Đã đăng nhập)
                         .anyRequest().authenticated()
                 )

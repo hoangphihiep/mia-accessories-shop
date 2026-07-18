@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Filter, ChevronDown } from 'lucide-react';
 import api from '../services/api';
 
@@ -7,11 +7,17 @@ export default function Shop() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const searchQuery = searchParams.get('search') || '';
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await api.get('/products');
+        setLoading(true);
+        const url = searchQuery ? `/products?search=${encodeURIComponent(searchQuery)}` : '/products';
+        const response = await api.get(url);
         setProducts(response.data);
       } catch (error) {
         console.error('Failed to fetch products:', error);
@@ -20,7 +26,7 @@ export default function Shop() {
       }
     };
     fetchProducts();
-  }, []);
+  }, [searchQuery]);
 
   const categories = ['All', 'Rings', 'Necklaces', 'Earrings', 'Bracelets'];
 

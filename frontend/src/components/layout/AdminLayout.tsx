@@ -1,15 +1,15 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Package, Users, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, Star, ArrowDownToLine, Settings, LogOut } from 'lucide-react';
 
 export default function AdminLayout() {
   const location = useLocation();
 
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Orders', href: '/admin/orders', icon: ShoppingBag },
-    { name: 'Products', href: '/admin/products', icon: Package },
-    { name: 'Customers', href: '/admin/customers', icon: Users },
-    { name: 'Settings', href: '/admin/settings', icon: Settings },
+    { name: 'Đơn hàng', href: '/admin/orders', icon: ShoppingBag },
+    { name: 'Sản phẩm', href: '/admin/products', icon: Package },
+    { name: 'Nhập kho', href: '/admin/inventory', icon: ArrowDownToLine },
+    { name: 'Đánh giá', href: '/admin/reviews', icon: Star },
   ];
 
   return (

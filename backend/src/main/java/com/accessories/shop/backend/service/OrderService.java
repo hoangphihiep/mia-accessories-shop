@@ -88,4 +88,30 @@ public class OrderService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng đăng nhập"));
         return orderRepository.findByUserId(user.getId());
     }
+
+    public List<Order> trackOrdersByPhone(String phone) {
+        return orderRepository.findByCustomerPhone(phone);
+    }
+
+    public List<Order> findAllOrders() {
+        return orderRepository.findAll();
+    }
+
+    @Transactional
+    public Order updateOrderStatus(Long orderId, String newStatus) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với ID: " + orderId));
+        order.setStatus(newStatus);
+        
+        // Nếu hủy đơn hàng, hoàn lại số lượng tồn kho
+        if ("CANCELLED".equals(newStatus)) {
+            for (OrderDetail detail : order.getOrderDetails()) {
+                ProductVariant variant = detail.getProductVariant();
+                variant.setStockQuantity(variant.getStockQuantity() + detail.getQuantity());
+                productVariantRepository.save(variant);
+            }
+        }
+        
+        return orderRepository.save(order);
+    }
 }
