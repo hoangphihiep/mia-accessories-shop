@@ -1,8 +1,8 @@
 package com.accessories.shop.backend.controller;
 
-import com.accessories.shop.backend.dto.AuthResponse;
-import com.accessories.shop.backend.dto.LoginRequest;
-import com.accessories.shop.backend.dto.RegisterRequest;
+import com.accessories.shop.backend.dto.response.AuthResponse;
+import com.accessories.shop.backend.dto.request.LoginRequest;
+import com.accessories.shop.backend.dto.request.RegisterRequest;
 import com.accessories.shop.backend.service.AuthService;
 import com.accessories.shop.backend.entity.PasswordResetToken;
 import com.accessories.shop.backend.repository.PasswordResetTokenRepository;
@@ -60,7 +60,7 @@ public class AuthController {
         String newPassword = payload.get("newPassword");
 
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Token không hợp lệ."));
+                .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Token không hợp lệ hoặc không tồn tại."));
 
         if (resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Token đã hết hạn.");

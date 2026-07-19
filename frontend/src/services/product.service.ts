@@ -1,0 +1,19 @@
+import api from './api';
+import type { ProductResponse, PageResponse } from '../types';
+
+export const ProductService = {
+  getProducts: async (params?: Record<string, any>): Promise<PageResponse<ProductResponse>> => {
+    const response = await api.get('/products', { params });
+    return response.data;
+  },
+
+  getProductById: async (id: number | string): Promise<ProductResponse> => {
+    const response = await api.get(`/products/${id}`);
+    return response.data;
+  },
+
+  getFeaturedProducts: async (size: number = 4): Promise<PageResponse<ProductResponse>> => {
+    const response = await api.get('/products', { params: { page: 0, size } });
+    return response.data;
+  }
+};

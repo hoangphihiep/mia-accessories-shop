@@ -12,8 +12,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
+
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -29,7 +33,12 @@ public class SecurityConfig {
                         // Mở cửa cho Đăng ký, Đăng nhập
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         // Mở cửa cho Khách hàng xem danh sách Sản phẩm, Thể loại, Chất liệu
-                        .requestMatchers(HttpMethod.GET, "/api/v1/categories/**", "/api/v1/products/**", "/api/v1/materials/**", "/api/v1/variants/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, 
+                            "/api/v1/categories", "/api/v1/categories/**", 
+                            "/api/v1/products", "/api/v1/products/**", 
+                            "/api/v1/materials", "/api/v1/materials/**", 
+                            "/api/v1/variants", "/api/v1/variants/**", 
+                            "/api/v1/reviews", "/api/v1/reviews/**").permitAll()
                         // Cho phép tra cứu đơn hàng không cần đăng nhập
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/track").permitAll()
                         // Cho phép Admin và Staff

@@ -1,9 +1,15 @@
 package com.accessories.shop.backend.controller;
 
+import com.accessories.shop.backend.dto.request.ProductRequest;
+import com.accessories.shop.backend.dto.response.ProductResponse;
 import com.accessories.shop.backend.entity.Product;
+import com.accessories.shop.backend.mapper.ProductMapper;
 import com.accessories.shop.backend.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,36 +20,47 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    private final ProductMapper productMapper;
 
     @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts(@RequestParam(required = false) String search) {
-        return ResponseEntity.ok(productService.getAllProducts(search));
+    public ResponseEntity<Page<ProductResponse>> getAllProducts(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            Pageable pageable) {
+        Page<Product> productPage = productService.getAllProducts(search, category, minPrice, maxPrice, pageable);
+        return ResponseEntity.ok(productPage.map(productMapper::toResponse));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.getProductById(id));
+    public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
+        Product product = productService.getProductById(id);
+        return ResponseEntity.ok(productMapper.toResponse(product));
     }
 
     // Tạo sản phẩm: POST http://localhost:8080/api/v1/products
     @PostMapping
-    public ResponseEntity<Product> createProduct(@RequestBody Product product) {
-        Long categoryId = product.getCategory() != null ? product.getCategory().getId() : null;
-        Long materialId = product.getMaterial() != null ? product.getMaterial().getId() : null;
-        return ResponseEntity.ok(productService.createProduct(product, categoryId, materialId));
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductResponse> createProduct(@RequestBody ProductRequest request) {
+        Product product = productMapper.toEntity(request);
+        Product savedProduct = productService.createProduct(product, request.getCategoryId(), request.getMaterialId());
+        return ResponseEntity.ok(productMapper.toResponse(savedProduct));
     }
 
     // Cập nhật: PUT http://localhost:8080/api/v1/products/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductResponse> updateProduct(
             @PathVariable Long id,
-            @RequestBody Product productDetails) {
-        Long categoryId = productDetails.getCategory() != null ? productDetails.getCategory().getId() : null;
-        Long materialId = productDetails.getMaterial() != null ? productDetails.getMaterial().getId() : null;
-        return ResponseEntity.ok(productService.updateProduct(id, productDetails, categoryId, materialId));
+            @RequestBody ProductRequest request) {
+        Product productDetails = productMapper.toEntity(request);
+        Product updatedProduct = productService.updateProduct(id, productDetails, request.getCategoryId(), request.getMaterialId());
+        return ResponseEntity.ok(productMapper.toResponse(updatedProduct));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.ok("Xóa thành công sản phẩm có ID: " + id);

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
+import { useRegister } from '../hooks/useAuthMutations';
 
 export default function Register() {
   const [firstName, setFirstName] = useState('');
@@ -9,19 +8,17 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { mutateAsync: registerMutation, isPending } = useRegister();
   const navigate = useNavigate();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await api.post('/auth/register', { 
-        firstName, 
-        lastName, 
+      await registerMutation({ 
+        fullName: `${firstName} ${lastName}`.trim(), 
         email, 
         password 
       });
-      login(response.data.token);
       navigate('/');
     } catch (err) {
       setError('Registration failed. Please try again.');
@@ -84,9 +81,10 @@ export default function Register() {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold uppercase tracking-widest rounded-none text-white bg-primary hover:bg-gray-800 focus:outline-none transition-colors"
+              disabled={isPending}
+              className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold uppercase tracking-widest rounded-none text-white bg-primary hover:bg-gray-800 focus:outline-none transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Register
+              {isPending ? 'Registering...' : 'Register'}
             </button>
           </div>
         </form>

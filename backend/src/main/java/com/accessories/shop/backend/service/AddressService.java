@@ -15,12 +15,12 @@ public class AddressService {
     private final UserRepository userRepository;
 
     public List<Address> getUserAddresses(String email) {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Người dùng không tồn tại"));
         return addressRepository.findByUserId(user.getId());
     }
 
     public Address addAddress(String email, Address addressRequest) {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Người dùng không tồn tại"));
         
         // Nếu đây là địa chỉ mặc định, bỏ mặc định của các địa chỉ khác
         if (addressRequest.getIsDefault() != null && addressRequest.getIsDefault()) {

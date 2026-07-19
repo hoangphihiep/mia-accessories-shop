@@ -36,27 +36,27 @@ INSERT INTO products (name, slug, description, is_active, category_id, material_
 
 -- 5. Thêm Biến thể sản phẩm (Product Variants)
 -- Mẫu A, Mẫu B, Mẫu C như bạn yêu cầu (cột name trong DB sẽ lưu giá trị này)
--- product_variants: product_id, name, sku, price, stock_quantity, is_active
-INSERT INTO product_variants (product_id, name, sku, price, stock_quantity, is_active) VALUES 
+-- product_variants: product_id, name, sku, price, stock_quantity, image_url, is_active, created_at, updated_at
+INSERT INTO product_variants (product_id, name, sku, price, stock_quantity, image_url, is_active, created_at, updated_at) VALUES 
 -- Biến thể cho Nhẫn (Product ID: 1)
-(1, 'Mẫu A (Đá trắng)', 'NHAN-A', 350000, 100, true),
-(1, 'Mẫu B (Đá hồng)', 'NHAN-B', 380000, 50, true),
-(1, 'Mẫu C (Đá xanh)', 'NHAN-C', 380000, 20, true),
+(1, 'Mẫu A (Đá trắng)', 'NHAN-A', 350000, 100, 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80', true, NOW(), NOW()),
+(1, 'Mẫu B (Đá hồng)', 'NHAN-B', 380000, 50, 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80', true, NOW(), NOW()),
+(1, 'Mẫu C (Đá xanh)', 'NHAN-C', 380000, 20, 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80', true, NOW(), NOW()),
 
 -- Biến thể cho Dây chuyền (Product ID: 2)
-(2, 'Mẫu A (Xích nhỏ)', 'DAY-A', 450000, 200, true),
-(2, 'Mẫu B (Xích to)', 'DAY-B', 480000, 120, true),
+(2, 'Mẫu A (Xích nhỏ)', 'DAY-A', 450000, 200, 'https://images.unsplash.com/photo-1599643478514-4a820c5678ee?auto=format&fit=crop&q=80', true, NOW(), NOW()),
+(2, 'Mẫu B (Xích to)', 'DAY-B', 480000, 120, 'https://images.unsplash.com/photo-1599643478514-4a820c5678ee?auto=format&fit=crop&q=80', true, NOW(), NOW()),
 
 -- Biến thể cho Khuyên tai (Product ID: 3)
-(3, 'Mẫu A (Ngọc trai 6 ly)', 'KHUYEN-A', 250000, 80, true),
-(3, 'Mẫu B (Ngọc trai 8 ly)', 'KHUYEN-B', 280000, 60, true);
+(3, 'Mẫu A (Ngọc trai 6 ly)', 'KHUYEN-A', 250000, 80, 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80', true, NOW(), NOW()),
+(3, 'Mẫu B (Ngọc trai 8 ly)', 'KHUYEN-B', 280000, 60, 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80', true, NOW(), NOW());
 
 -- 6. Thêm Ảnh sản phẩm (Product Images)
-INSERT INTO product_images (product_id, image_url, is_primary) VALUES 
-(1, 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80', true),
-(1, 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80', false),
-(2, 'https://images.unsplash.com/photo-1599643478514-4a820c5678ee?auto=format&fit=crop&q=80', true),
-(3, 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80', true);
+INSERT INTO product_images (product_id, image_url, is_primary, created_at, updated_at) VALUES 
+(1, 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80', true, NOW(), NOW()),
+(1, 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80', false, NOW(), NOW()),
+(2, 'https://images.unsplash.com/photo-1599643478514-4a820c5678ee?auto=format&fit=crop&q=80', true, NOW(), NOW()),
+(3, 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80', true, NOW(), NOW());
 
 -- ==========================================
 -- HƯỚNG DẪN TẠO TÀI KHOẢN ADMIN / STAFF:

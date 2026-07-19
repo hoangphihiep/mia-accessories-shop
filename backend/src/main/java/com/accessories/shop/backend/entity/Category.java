@@ -32,6 +32,5 @@ public class Category {
     private Boolean status;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"category", "parentCategory", "hibernateLazyInitializer", "handler"})
     private List<Product> products;
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { useResetPassword } from '../hooks/useAuthMutations';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -11,7 +11,7 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { mutateAsync: resetPassword, isPending: loading } = useResetPassword();
 
   if (!token) {
     return <div className="p-12 text-center text-red-500">Token không hợp lệ. Vui lòng kiểm tra lại email.</div>;
@@ -23,16 +23,13 @@ export default function ResetPassword() {
       return setError('Mật khẩu xác nhận không khớp!');
     }
     setError('');
-    setLoading(true);
 
     try {
-      const res = await api.post('/auth/reset-password', { token, newPassword });
-      setMessage(res.data);
+      const res = await resetPassword({ token, newPassword });
+      setMessage(res.data || 'Đã cập nhật mật khẩu.');
       setTimeout(() => navigate('/login'), 3000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Lỗi đặt lại mật khẩu');
-    } finally {
-      setLoading(false);
     }
   };
 

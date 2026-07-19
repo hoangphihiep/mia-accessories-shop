@@ -1,51 +1,39 @@
 import { useState, useEffect } from 'react';
-import api from '../services/api';
+import { useProfile, useUpdateProfile, useAddresses, useAddAddress, useMyOrders } from '../hooks/useProfile';
 import { useAuth } from '../context/AuthContext';
 
 export default function Profile() {
   const { isAuthenticated, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('info');
-  const [profile, setProfile] = useState<any>(null);
-  const [addresses, setAddresses] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
+  const { data: profile, isLoading: isProfileLoading } = useProfile();
+  const { data: addresses = [] } = useAddresses();
+  const { data: orders = [] } = useMyOrders();
+  const { mutateAsync: updateProfile } = useUpdateProfile();
+  const { mutateAsync: addAddress } = useAddAddress();
 
-  // form state for profile
   const [editProfile, setEditProfile] = useState({ fullName: '', phone: '', address: '' });
   const [newAddress, setNewAddress] = useState({ street: '', city: '', phone: '', isDefault: false });
 
   useEffect(() => {
     if (!isAuthenticated) {
       window.location.href = '/login';
-      return;
     }
-
-    const fetchData = async () => {
-      try {
-        const [profRes, addrRes, orderRes] = await Promise.all([
-          api.get('/users/me'),
-          api.get('/addresses'),
-          api.get('/orders/my-orders')
-        ]);
-        setProfile(profRes.data);
-        setEditProfile({ 
-          fullName: profRes.data.fullName || '', 
-          phone: profRes.data.phone || '', 
-          address: profRes.data.address || '' 
-        });
-        setAddresses(addrRes.data);
-        setOrders(orderRes.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchData();
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (profile) {
+      setEditProfile({ 
+        fullName: profile.fullName || '', 
+        phone: profile.fullName || '', 
+        address: profile.address || '' 
+      });
+    }
+  }, [profile]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await api.put('/users/me', editProfile);
-      setProfile(res.data);
+      await updateProfile(editProfile);
       alert('Cập nhật hồ sơ thành công!');
     } catch (err) {
       alert('Lỗi cập nhật hồ sơ');
@@ -55,8 +43,7 @@ export default function Profile() {
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await api.post('/addresses', newAddress);
-      setAddresses([...addresses, res.data]);
+      await addAddress(newAddress);
       setNewAddress({ street: '', city: '', phone: '', isDefault: false });
       alert('Thêm địa chỉ thành công!');
     } catch (err) {
@@ -64,7 +51,7 @@ export default function Profile() {
     }
   };
 
-  if (!profile) return <div className="text-center py-20">Loading...</div>;
+  if (isProfileLoading) return <div className="text-center py-20">Loading...</div>;
 
   return (
     <div className="container mx-auto px-4 py-12 flex flex-col md:flex-row gap-12">
@@ -131,7 +118,7 @@ export default function Profile() {
           <div>
             <h3 className="text-xl font-bold uppercase mb-6">Sổ địa chỉ</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {addresses.map(addr => (
+              {addresses.map((addr: any) => (
                 <div key={addr.id} className="border p-6 relative">
                   {addr.isDefault && <span className="absolute top-2 right-2 text-xs bg-primary text-white px-2 py-1 font-bold">Mặc định</span>}
                   <p className="font-bold">{addr.street}</p>
@@ -162,7 +149,7 @@ export default function Profile() {
               <p className="text-gray-500">Bạn chưa có đơn hàng nào.</p>
             ) : (
               <div className="space-y-6">
-                {orders.map(order => (
+                {orders.map((order: any) => (
                   <div key={order.id} className="border p-6">
                     <div className="flex justify-between items-center mb-4 pb-4 border-b">
                       <div>

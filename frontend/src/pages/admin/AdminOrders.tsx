@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Check, X } from 'lucide-react';
+import { Search, Check, X } from 'lucide-react';
 import api from '../../services/api';
 
 export default function AdminOrders() {

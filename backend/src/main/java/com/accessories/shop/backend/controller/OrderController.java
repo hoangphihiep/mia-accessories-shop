@@ -1,11 +1,16 @@
 package com.accessories.shop.backend.controller;
 
-import com.accessories.shop.backend.dto.OrderRequest;
+import com.accessories.shop.backend.dto.request.OrderRequest;
+import com.accessories.shop.backend.dto.response.OrderResponse;
 import com.accessories.shop.backend.entity.Order;
+import com.accessories.shop.backend.mapper.OrderMapper;
 import com.accessories.shop.backend.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -13,20 +18,28 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderMapper orderMapper;
 
     @PostMapping
-    public ResponseEntity<Order> placeOrder(@RequestBody OrderRequest request) {
-        return ResponseEntity.ok(orderService.placeOrder(request));
+    public ResponseEntity<OrderResponse> placeOrder(@RequestBody OrderRequest request) {
+        Order order = orderService.placeOrder(request);
+        return ResponseEntity.ok(orderMapper.toResponse(order));
     }
 
     @GetMapping("/my-orders")
-    public ResponseEntity<?> getMyOrders(org.springframework.security.core.Authentication authentication) {
+    public ResponseEntity<List<OrderResponse>> getMyOrders(org.springframework.security.core.Authentication authentication) {
         String email = authentication.getName();
-        return ResponseEntity.ok(orderService.getUserOrders(email));
+        List<OrderResponse> responses = orderService.getUserOrders(email).stream()
+                .map(orderMapper::toResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/track")
-    public ResponseEntity<?> trackOrders(@RequestParam String phone) {
-        return ResponseEntity.ok(orderService.trackOrdersByPhone(phone));
+    public ResponseEntity<List<OrderResponse>> trackOrders(@RequestParam String phone) {
+        List<OrderResponse> responses = orderService.trackOrdersByPhone(phone).stream()
+                .map(orderMapper::toResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 }

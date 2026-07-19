@@ -4,7 +4,6 @@ import api from '../../services/api';
 
 export default function AdminInventory() {
   const [receipts, setReceipts] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -22,7 +21,6 @@ export default function AdminInventory() {
       setReceipts(recRes.data);
       
       const allProducts = prodRes.data;
-      setProducts(allProducts);
       
       const allVariants = allProducts.flatMap((p: any) => 
         (p.variants || []).map((v: any) => ({ ...v, productName: p.name }))

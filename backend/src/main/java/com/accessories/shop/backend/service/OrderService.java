@@ -1,7 +1,7 @@
 package com.accessories.shop.backend.service;
 
-import com.accessories.shop.backend.dto.OrderRequest;
-import com.accessories.shop.backend.dto.OrderItemRequest;
+import com.accessories.shop.backend.dto.request.OrderRequest;
+import com.accessories.shop.backend.dto.request.OrderItemRequest;
 import com.accessories.shop.backend.entity.Order;
 import com.accessories.shop.backend.entity.OrderDetail;
 import com.accessories.shop.backend.entity.ProductVariant;
@@ -32,7 +32,7 @@ public class OrderService {
         // 1. Lấy Email của người đang đăng nhập từ Security Context
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng đăng nhập"));
+                .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
 
         // 2. Khởi tạo Đơn hàng (Order)
         Order order = Order.builder()
@@ -51,7 +51,7 @@ public class OrderService {
         // 3. Xử lý từng món hàng trong giỏ
         for (OrderItemRequest itemReq : request.getItems()) {
             ProductVariant variant = productVariantRepository.findById(itemReq.getVariantId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu sản phẩm với ID: " + itemReq.getVariantId()));
+                    .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy mẫu sản phẩm với ID: " + itemReq.getVariantId()));
 
             // Kiểm tra tồn kho
             if (variant.getStockQuantity() < itemReq.getQuantity()) {
@@ -85,7 +85,7 @@ public class OrderService {
 
     public List<Order> getUserOrders(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng đăng nhập"));
+                .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
         return orderRepository.findByUserId(user.getId());
     }
 
@@ -100,7 +100,7 @@ public class OrderService {
     @Transactional
     public Order updateOrderStatus(Long orderId, String newStatus) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với ID: " + orderId));
+                .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy đơn hàng với ID: " + orderId));
         order.setStatus(newStatus);
         
         // Nếu hủy đơn hàng, hoàn lại số lượng tồn kho

@@ -1,20 +1,18 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
+import { useLogin } from '../hooks/useAuthMutations';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { mutateAsync: loginMutation, isPending } = useLogin();
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await api.post('/auth/login', { email, password });
-      login(response.data.token);
+      await loginMutation({ email, password });
       navigate('/');
     } catch (err) {
       setError('Invalid email or password');
@@ -59,9 +57,10 @@ export default function Login() {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold uppercase tracking-widest rounded-none text-white bg-primary hover:bg-gray-800 focus:outline-none transition-colors"
+              disabled={isPending}
+              className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold uppercase tracking-widest rounded-none text-white bg-primary hover:bg-gray-800 focus:outline-none transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Sign in
+              {isPending ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
         </form>

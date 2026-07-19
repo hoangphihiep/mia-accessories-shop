@@ -1,22 +1,19 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../services/api';
+import { useForgotPassword } from '../hooks/useAuthMutations';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { mutateAsync: forgotPassword, isPending: loading } = useForgotPassword();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     try {
-      const res = await api.post('/auth/forgot-password', { email });
-      setMessage(res.data);
+      const res = await forgotPassword(email);
+      setMessage(res.data || 'Đã gửi link khôi phục mật khẩu.');
     } catch (error) {
       setMessage('Đã xảy ra lỗi, vui lòng thử lại sau.');
-    } finally {
-      setLoading(false);
     }
   };
 

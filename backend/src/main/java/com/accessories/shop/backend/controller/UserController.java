@@ -1,6 +1,10 @@
 package com.accessories.shop.backend.controller;
 
+import com.accessories.shop.backend.dto.request.UpdateProfileRequest;
+import com.accessories.shop.backend.dto.response.UserResponse;
 import com.accessories.shop.backend.entity.User;
+import com.accessories.shop.backend.exception.ResourceNotFoundException;
+import com.accessories.shop.backend.mapper.UserMapper;
 import com.accessories.shop.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,20 +17,21 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @GetMapping("/me")
-    public ResponseEntity<User> getMyProfile(Authentication authentication) {
+    public ResponseEntity<UserResponse> getMyProfile(Authentication authentication) {
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        return ResponseEntity.ok(user);
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email: " + email));
+        return ResponseEntity.ok(userMapper.toResponse(user));
     }
 
     @PutMapping("/me")
-    public ResponseEntity<User> updateMyProfile(Authentication authentication, @RequestBody User updateRequest) {
+    public ResponseEntity<UserResponse> updateMyProfile(Authentication authentication, @RequestBody UpdateProfileRequest updateRequest) {
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email: " + email));
         
         if (updateRequest.getFullName() != null) {
             user.setFullName(updateRequest.getFullName());
@@ -38,6 +43,7 @@ public class UserController {
             user.setAddress(updateRequest.getAddress());
         }
         
-        return ResponseEntity.ok(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        return ResponseEntity.ok(userMapper.toResponse(savedUser));
     }
 }

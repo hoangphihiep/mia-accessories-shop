@@ -1,47 +1,22 @@
-import { useState, useEffect } from 'react';
 import { DollarSign, ShoppingBag, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import api from '../../services/api';
+import { useDashboardStats, useRecentOrders } from '../../hooks/useAdmin';
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({
-    totalOrders: 0,
-    totalRevenue: 0,
-    lowStockItems: 0
-  });
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: statsData, isLoading: isStatsLoading } = useDashboardStats();
+  const { data: ordersData = [], isLoading: isOrdersLoading } = useRecentOrders();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const [statsRes, ordersRes] = await Promise.all([
-          api.get('/admin/dashboard/stats'),
-          api.get('/admin/orders')
-        ]);
-        
-        setStats({
-          totalOrders: statsRes.data.totalOrders || 0,
-          totalRevenue: statsRes.data.totalRevenue || 0,
-          lowStockItems: statsRes.data.lowStockItems || 0
-        });
+  const stats = {
+    totalOrders: statsData?.totalOrders || 0,
+    totalRevenue: statsData?.totalRevenue || 0,
+    lowStockItems: statsData?.lowStockItems || 0
+  };
 
-        // Lấy 5 đơn mới nhất
-        const sortedOrders = ordersRes.data.sort((a: any, b: any) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        setRecentOrders(sortedOrders.slice(0, 5));
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const recentOrders = [...ordersData]
+    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
 
-    fetchDashboardData();
-  }, []);
-
-  if (loading) return <div className="p-12 text-center">Loading...</div>;
+  if (isStatsLoading || isOrdersLoading) return <div className="p-12 text-center">Loading...</div>;
 
   const STATS_CARDS = [
     { name: 'Tổng Doanh Thu', value: `${stats.totalRevenue.toLocaleString('vi-VN')}đ`, icon: DollarSign, color: 'text-green-500' },

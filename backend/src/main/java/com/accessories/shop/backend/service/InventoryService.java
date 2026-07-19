@@ -1,6 +1,6 @@
 package com.accessories.shop.backend.service;
 
-import com.accessories.shop.backend.dto.InventoryReceiptRequest;
+import com.accessories.shop.backend.dto.request.InventoryReceiptRequest;
 import com.accessories.shop.backend.entity.InventoryReceipt;
 import com.accessories.shop.backend.entity.InventoryReceiptDetail;
 import com.accessories.shop.backend.entity.ProductVariant;
@@ -33,7 +33,7 @@ public class InventoryService {
     public InventoryReceipt createReceipt(InventoryReceiptRequest request) {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng đăng nhập"));
+                .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
 
         InventoryReceipt receipt = InventoryReceipt.builder()
                 .createdBy(user)
@@ -45,7 +45,7 @@ public class InventoryService {
 
         for (InventoryReceiptRequest.ReceiptDetailReq reqDetail : request.getDetails()) {
             ProductVariant variant = productVariantRepository.findById(reqDetail.getVariantId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy mẫu sản phẩm"));
+                    .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy mẫu sản phẩm"));
 
             // Tăng số lượng tồn kho
             variant.setStockQuantity(variant.getStockQuantity() + reqDetail.getQuantity());

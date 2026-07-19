@@ -1,4 +1,4 @@
-package com.accessories.shop.backend.dto;
+package com.accessories.shop.backend.dto.request;
 
 import lombok.Data;
 

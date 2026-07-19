@@ -1,8 +1,8 @@
 package com.accessories.shop.backend.service;
 
-import com.accessories.shop.backend.dto.AuthResponse;
-import com.accessories.shop.backend.dto.LoginRequest;
-import com.accessories.shop.backend.dto.RegisterRequest;
+import com.accessories.shop.backend.dto.response.AuthResponse;
+import com.accessories.shop.backend.dto.request.LoginRequest;
+import com.accessories.shop.backend.dto.request.RegisterRequest;
 import com.accessories.shop.backend.entity.Role;
 import com.accessories.shop.backend.entity.User;
 import com.accessories.shop.backend.repository.RoleRepository;
