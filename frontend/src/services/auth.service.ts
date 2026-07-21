@@ -1,5 +1,5 @@
 import api from './api';
-import type { LoginRequest, RegisterRequest, AuthResponse } from '../types';
+import type { LoginRequest, RegisterRequest, AuthResponse, MessageResponse } from '../types';
 
 export const AuthService = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -12,12 +12,12 @@ export const AuthService = {
     return response.data;
   },
   
-  forgotPassword: async (email: string) => {
+  forgotPassword: async (email: string): Promise<MessageResponse> => {
     const response = await api.post('/auth/forgot-password', { email });
     return response.data;
   },
   
-  resetPassword: async (token: string, newPassword: string) => {
+  resetPassword: async (token: string, newPassword: string): Promise<MessageResponse> => {
     const response = await api.post('/auth/reset-password', { token, newPassword });
     return response.data;
   }

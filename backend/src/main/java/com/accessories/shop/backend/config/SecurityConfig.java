@@ -32,6 +32,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Mở cửa cho Đăng ký, Đăng nhập
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        // Mở cửa cho Swagger
+                        .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // Mở cửa cho Khách hàng xem danh sách Sản phẩm, Thể loại, Chất liệu
                         .requestMatchers(HttpMethod.GET, 
                             "/api/v1/categories", "/api/v1/categories/**", 

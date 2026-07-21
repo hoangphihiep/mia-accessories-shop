@@ -19,7 +19,7 @@ export default function Home() {
         <div className="relative z-10 text-center text-white px-4 flex flex-col items-center mt-10">
           <span className="text-sm font-bold tracking-[0.3em] uppercase mb-6 text-white/80">Bộ sưu tập mùa hè</span>
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-6 tracking-tighter uppercase leading-tight">
-            Essentials <br/> Collection
+            BỘ SƯU TẬP <br/> THIẾT YẾU
           </h1>
           <p className="text-lg md:text-xl mb-10 max-w-lg mx-auto font-light text-white/90">
             Nâng tầm phong cách mỗi ngày với bộ sưu tập phụ kiện tinh tế, tối giản và sang trọng.

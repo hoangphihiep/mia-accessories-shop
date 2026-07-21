@@ -7,3 +7,51 @@
     @apply bg-white text-primary font-sans;
   }
 }
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+  
+  /* Dark mode scrollbar for sidebar */
+  .aside .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-800;
+  }
+  .aside .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-700;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print\:static, .print\:static * {
+    visibility: visible;
+  }
+  .print\:static {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  @page {
+    margin: 0;
+    size: 80mm 297mm; /* Thermal receipt printer standard width */
+  }
+}

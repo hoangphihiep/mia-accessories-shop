@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import com.accessories.shop.backend.repository.SupplierRepository;
+import com.accessories.shop.backend.entity.Supplier;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +26,7 @@ public class InventoryService {
     private final InventoryReceiptRepository inventoryReceiptRepository;
     private final ProductVariantRepository productVariantRepository;
     private final UserRepository userRepository;
+    private final SupplierRepository supplierRepository;
 
     public List<InventoryReceipt> findAllReceipts() {
         return inventoryReceiptRepository.findAll();
@@ -35,9 +38,16 @@ public class InventoryService {
         User user = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
 
+        Supplier supplierEntity = null;
+        if (request.getSupplierId() != null) {
+            supplierEntity = supplierRepository.findById(request.getSupplierId())
+                    .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy Nhà cung cấp"));
+        }
+
         InventoryReceipt receipt = InventoryReceipt.builder()
                 .createdBy(user)
                 .supplier(request.getSupplier())
+                .supplierEntity(supplierEntity)
                 .details(new ArrayList<>())
                 .build();
 
@@ -65,6 +75,13 @@ public class InventoryService {
         }
 
         receipt.setTotalCost(totalCost);
+
+        // Cộng nợ cho nhà cung cấp
+        if (supplierEntity != null) {
+            supplierEntity.setDebt(supplierEntity.getDebt().add(totalCost));
+            supplierRepository.save(supplierEntity);
+        }
+
         return inventoryReceiptRepository.save(receipt);
     }
 }

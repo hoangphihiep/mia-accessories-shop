@@ -55,7 +55,7 @@ public class OrderService {
 
             // Kiểm tra tồn kho
             if (variant.getStockQuantity() < itemReq.getQuantity()) {
-                throw new RuntimeException("Sản phẩm " + variant.getName() + " không đủ số lượng trong kho!");
+                throw new com.accessories.shop.backend.exception.BadRequestException("Sản phẩm " + variant.getName() + " không đủ số lượng trong kho!");
             }
 
             // Trừ tồn kho
@@ -80,6 +80,64 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
 
         // 4. Lưu đơn hàng (CascadeType.ALL sẽ tự động lưu luôn các OrderDetail bên trong)
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public Order placePosOrder(OrderRequest request) {
+        // POS order can be made by Staff or Admin
+        String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User staff = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
+
+        // Xác định Khách hàng thực sự mua (dựa vào số điện thoại)
+        User actualCustomer = staff; // Mặc định gán cho Staff nếu không tìm thấy (Khách vãng lai không có SĐT)
+        if (request.getCustomerPhone() != null && !request.getCustomerPhone().isEmpty()) {
+            java.util.Optional<User> foundCustomer = userRepository.findByPhone(request.getCustomerPhone());
+            if (foundCustomer.isPresent()) {
+                actualCustomer = foundCustomer.get();
+            }
+        }
+
+        Order order = Order.builder()
+                .user(actualCustomer) // Gán cho Khách hàng (để tính điểm CRM) hoặc Staff nếu là khách vãng lai
+                .createdBy(staff) // Lưu vết Nhân viên thu ngân đứng máy POS
+                .customerName(request.getCustomerName() != null && !request.getCustomerName().isEmpty() ? request.getCustomerName() : "Khách vãng lai")
+                .customerPhone(request.getCustomerPhone() != null ? request.getCustomerPhone() : "")
+                .shippingAddress("Mua trực tiếp tại quầy")
+                .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "CASH")
+                .status("COMPLETED") // Tự động hoàn thành
+                .isPaid(true) // Tự động đã thanh toán
+                .orderDetails(new ArrayList<>())
+                .build();
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (OrderItemRequest itemReq : request.getItems()) {
+            ProductVariant variant = productVariantRepository.findById(itemReq.getVariantId())
+                    .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy mẫu sản phẩm"));
+
+            if (variant.getStockQuantity() < itemReq.getQuantity()) {
+                throw new com.accessories.shop.backend.exception.BadRequestException("Sản phẩm " + variant.getName() + " không đủ số lượng trong kho!");
+            }
+
+            variant.setStockQuantity(variant.getStockQuantity() - itemReq.getQuantity());
+            productVariantRepository.save(variant);
+
+            BigDecimal itemTotal = variant.getPrice().multiply(BigDecimal.valueOf(itemReq.getQuantity()));
+            totalAmount = totalAmount.add(itemTotal);
+
+            OrderDetail orderDetail = OrderDetail.builder()
+                    .order(order)
+                    .productVariant(variant)
+                    .quantity(itemReq.getQuantity())
+                    .price(variant.getPrice())
+                    .build();
+
+            order.getOrderDetails().add(orderDetail);
+        }
+
+        order.setTotalAmount(totalAmount);
         return orderRepository.save(order);
     }
 

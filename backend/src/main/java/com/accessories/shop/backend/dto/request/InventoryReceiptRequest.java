@@ -8,6 +8,7 @@ import java.util.List;
 @Data
 public class InventoryReceiptRequest {
     private String supplier;
+    private Long supplierId;
     private List<ReceiptDetailReq> details;
 
     @Data

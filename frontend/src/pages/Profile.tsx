@@ -51,7 +51,7 @@ export default function Profile() {
     }
   };
 
-  if (isProfileLoading) return <div className="text-center py-20">Loading...</div>;
+  if (isProfileLoading) return <div className="text-center py-20">Đang tải dữ liệu...</div>;
 
   return (
     <div className="container mx-auto px-4 py-12 flex flex-col md:flex-row gap-12">

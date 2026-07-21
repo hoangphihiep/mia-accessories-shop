@@ -25,7 +25,13 @@ public class InventoryReceipt {
     @JoinColumn(name = "user_id", nullable = false)
     private User createdBy;
 
+    // Giữ lại trường cũ tránh crash DB
     private String supplier;
+
+    // Bổ sung liên kết thật với bảng suppliers
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplier_id")
+    private Supplier supplierEntity;
 
     private BigDecimal totalCost;
 

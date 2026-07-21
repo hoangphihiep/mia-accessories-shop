@@ -80,13 +80,13 @@ export default function Checkout() {
       <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-12">
         {/* Checkout Form */}
         <div className="flex-1">
-          <h1 className="text-3xl font-black uppercase tracking-tighter mb-8">Checkout</h1>
+          <h1 className="text-3xl font-black uppercase tracking-tighter mb-8">Thanh toán</h1>
           
           <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4 uppercase tracking-widest">Contact Information</h2>
+            <h2 className="text-xl font-bold mb-4 uppercase tracking-widest">Thông tin liên hệ</h2>
             <input 
               type="email" 
-              placeholder="Email Address" 
+              placeholder="Địa chỉ Email" 
               required
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
@@ -95,11 +95,11 @@ export default function Checkout() {
           </div>
 
           <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4 uppercase tracking-widest">Shipping Address</h2>
+            <h2 className="text-xl font-bold mb-4 uppercase tracking-widest">Địa chỉ giao hàng</h2>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <input 
                 type="text" 
-                placeholder="First Name" 
+                placeholder="Tên" 
                 required
                 value={formData.firstName}
                 onChange={(e) => setFormData({...formData, firstName: e.target.value})}
@@ -107,7 +107,7 @@ export default function Checkout() {
               />
               <input 
                 type="text" 
-                placeholder="Last Name" 
+                placeholder="Họ" 
                 required
                 value={formData.lastName}
                 onChange={(e) => setFormData({...formData, lastName: e.target.value})}
@@ -116,7 +116,7 @@ export default function Checkout() {
             </div>
             <input 
               type="text" 
-              placeholder="Address" 
+              placeholder="Địa chỉ" 
               required
               value={formData.address}
               onChange={(e) => setFormData({...formData, address: e.target.value})}
@@ -125,7 +125,7 @@ export default function Checkout() {
             <div className="grid grid-cols-2 gap-4 mb-4">
               <input 
                 type="text" 
-                placeholder="City" 
+                placeholder="Thành phố / Tỉnh" 
                 required
                 value={formData.city}
                 onChange={(e) => setFormData({...formData, city: e.target.value})}
@@ -133,7 +133,7 @@ export default function Checkout() {
               />
               <input 
                 type="tel" 
-                placeholder="Phone" 
+                placeholder="Số điện thoại" 
                 required
                 value={formData.phone}
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
@@ -143,7 +143,7 @@ export default function Checkout() {
           </div>
 
           <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4 uppercase tracking-widest">Payment Method</h2>
+            <h2 className="text-xl font-bold mb-4 uppercase tracking-widest">Phương thức thanh toán</h2>
             <div className="border border-gray-300 divide-y divide-gray-300">
               <label className="flex items-center space-x-4 p-4 cursor-pointer hover:bg-gray-50 transition-colors">
                 <input 
@@ -154,7 +154,7 @@ export default function Checkout() {
                   onChange={(e) => setFormData({...formData, paymentMethod: e.target.value})}
                   className="accent-primary w-4 h-4" 
                 />
-                <span className="font-bold">Cash on Delivery (COD)</span>
+                <span className="font-bold">Thanh toán khi nhận hàng (COD)</span>
               </label>
               <label className="flex items-center space-x-4 p-4 cursor-pointer hover:bg-gray-50 transition-colors">
                 <input 
@@ -175,14 +175,14 @@ export default function Checkout() {
             disabled={loading}
             className="w-full h-16 bg-primary text-white font-bold uppercase tracking-widest text-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400"
           >
-            {loading ? 'Processing...' : 'Complete Order'}
+            {loading ? 'Đang xử lý...' : 'Hoàn tất đặt hàng'}
           </button>
         </div>
 
         {/* Order Summary Sidebar */}
         <div className="w-full lg:w-1/3">
           <div className="bg-gray-50 p-8 sticky top-24">
-            <h2 className="text-xl font-black uppercase tracking-widest mb-6">Order Items</h2>
+            <h2 className="text-xl font-black uppercase tracking-widest mb-6">Sản phẩm trong đơn</h2>
             
             {cartItems.map(item => (
               <div key={item.variantId} className="space-y-4 mb-6 border-b pb-6">
@@ -202,17 +202,17 @@ export default function Checkout() {
 
             <div className="space-y-4 text-sm mb-6 border-b pb-6">
               <div className="flex justify-between">
-                <span className="text-gray-500">Subtotal</span>
+                <span className="text-gray-500">Tạm tính</span>
                 <span className="font-bold">{subtotal.toLocaleString('vi-VN')}đ</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Shipping</span>
+                <span className="text-gray-500">Phí vận chuyển</span>
                 <span className="font-bold">{shipping.toLocaleString('vi-VN')}đ</span>
               </div>
             </div>
             
             <div className="flex justify-between text-2xl font-black mb-8">
-              <span>Total</span>
+              <span>Tổng cộng</span>
               <span>{total.toLocaleString('vi-VN')}đ</span>
             </div>
           </div>

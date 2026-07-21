@@ -53,10 +53,10 @@ INSERT INTO product_variants (product_id, name, sku, price, stock_quantity, imag
 
 -- 6. Thêm Ảnh sản phẩm (Product Images)
 INSERT INTO product_images (product_id, image_url, is_primary, created_at, updated_at) VALUES 
-(1, 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80', true, NOW(), NOW()),
-(1, 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80', false, NOW(), NOW()),
-(2, 'https://images.unsplash.com/photo-1599643478514-4a820c5678ee?auto=format&fit=crop&q=80', true, NOW(), NOW()),
-(3, 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80', true, NOW(), NOW());
+(1, 'https://images.unsplash.com/photo-1605100804763-247f67b8548e?auto=format&fit=crop&q=80&w=800', true, NOW(), NOW()),
+(1, 'https://images.unsplash.com/photo-1605100804763-247f67b8548e?auto=format&fit=crop&q=80&w=800', false, NOW(), NOW()),
+(2, 'https://images.unsplash.com/photo-1599643477873-ce48155ce689?auto=format&fit=crop&q=80&w=800', true, NOW(), NOW()),
+(3, 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&q=80&w=800', true, NOW(), NOW());
 
 -- ==========================================
 -- HƯỚNG DẪN TẠO TÀI KHOẢN ADMIN / STAFF:

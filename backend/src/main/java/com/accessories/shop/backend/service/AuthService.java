@@ -1,10 +1,13 @@
 package com.accessories.shop.backend.service;
 
 import com.accessories.shop.backend.dto.response.AuthResponse;
+import com.accessories.shop.backend.dto.response.RoleResponse;
+import com.accessories.shop.backend.dto.response.UserResponse;
 import com.accessories.shop.backend.dto.request.LoginRequest;
 import com.accessories.shop.backend.dto.request.RegisterRequest;
 import com.accessories.shop.backend.entity.Role;
 import com.accessories.shop.backend.entity.User;
+import com.accessories.shop.backend.exception.BadRequestException;
 import com.accessories.shop.backend.repository.RoleRepository;
 import com.accessories.shop.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,10 +29,10 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         // Kiểm tra xem Email đã tồn tại chưa
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email đã được sử dụng!");
+            throw new BadRequestException("Email đã được sử dụng!");
         }
 
-        // Lấy Role mặc định là ROLE_CUSTOMER (Nếu chưa có trong DB thì phải tạo tay trong MySQL nhé)
+        // Lấy Role mặc định là ROLE_CUSTOMER
         Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
                 .orElseThrow(() -> new RuntimeException("Lỗi hệ thống: Không tìm thấy quyền ROLE_CUSTOMER"));
 
@@ -51,8 +54,7 @@ public class AuthService {
 
         return AuthResponse.builder()
                 .token(jwtToken)
-                .email(user.getEmail())
-                .role(user.getRole().getName())
+                .user(mapToUserResponse(user))
                 .build();
     }
 
@@ -71,8 +73,7 @@ public class AuthService {
 
         return AuthResponse.builder()
                 .token(jwtToken)
-                .email(user.getEmail())
-                .role(user.getRole().getName())
+                .user(mapToUserResponse(user))
                 .build();
     }
 
@@ -82,5 +83,24 @@ public class AuthService {
 
     public void saveUser(User user) {
         userRepository.save(user);
+    }
+
+    private UserResponse mapToUserResponse(User user) {
+        UserResponse response = new UserResponse();
+        response.setId(user.getId());
+        response.setEmail(user.getEmail());
+        response.setFullName(user.getFullName());
+        response.setPhone(user.getPhone());
+        response.setAddress(user.getAddress());
+        response.setIsActive(user.getIsActive());
+
+        if (user.getRole() != null) {
+            RoleResponse roleResponse = new RoleResponse();
+            roleResponse.setId(user.getRole().getId());
+            roleResponse.setName(user.getRole().getName());
+            response.setRole(roleResponse);
+        }
+
+        return response;
     }
 }

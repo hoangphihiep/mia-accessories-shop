@@ -26,6 +26,11 @@ public class Order {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private User createdBy;
+
+
     // Thông tin giao hàng (Lưu cứng lúc đặt, lỡ sau này khách đổi địa chỉ profile thì đơn cũ không bị ảnh hưởng)
     @Column(name = "customer_name", nullable = false, length = 100)
     private String customerName;

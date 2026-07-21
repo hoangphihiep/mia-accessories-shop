@@ -34,4 +34,10 @@ public class AdminOrderController {
         Order order = orderService.updateOrderStatus(id, status);
         return ResponseEntity.ok(orderMapper.toResponse(order));
     }
+
+    @PostMapping("/pos")
+    public ResponseEntity<OrderResponse> placePosOrder(@RequestBody com.accessories.shop.backend.dto.request.OrderRequest request) {
+        Order order = orderService.placePosOrder(request);
+        return ResponseEntity.ok(orderMapper.toResponse(order));
+    }
 }

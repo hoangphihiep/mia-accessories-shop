@@ -29,6 +29,7 @@ public class InventoryController {
     }
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<InventoryReceiptResponse> createReceipt(@RequestBody InventoryReceiptRequest request) {
         InventoryReceipt receipt = inventoryService.createReceipt(request);
         return ResponseEntity.ok(inventoryMapper.toResponse(receipt));

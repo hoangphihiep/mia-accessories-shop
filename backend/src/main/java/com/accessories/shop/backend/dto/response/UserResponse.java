@@ -12,5 +12,11 @@ public class UserResponse {
     private String phone;
     private String address;
     private Boolean isActive;
+    private java.time.LocalDateTime createdAt;
     private RoleResponse role;
+    
+    // CRM Fields (Chỉ dành cho Khách hàng)
+    private Long totalOrders;
+    private java.math.BigDecimal totalSpent;
+    private String customerTier;
 }

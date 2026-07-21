@@ -23,6 +23,11 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminInventory from './pages/admin/AdminInventory';
 import AdminReviews from './pages/admin/AdminReviews';
+import AdminCategories from './pages/admin/AdminCategories';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminSuppliers from './pages/admin/AdminSuppliers';
+import AdminPOS from './pages/admin/AdminPOS';
+import AdminCustomers from './pages/admin/AdminCustomers';
 
 function App() {
   return (
@@ -51,11 +56,15 @@ function App() {
             <Route path="/admin" element={<ProtectedRoute />}>
               <Route element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
+                <Route path="pos" element={<AdminPOS />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="products" element={<AdminProducts />} />
                 <Route path="inventory" element={<AdminInventory />} />
                 <Route path="reviews" element={<AdminReviews />} />
-                <Route path="customers" element={<div className="p-6">Customers coming soon...</div>} />
+                <Route path="categories" element={<AdminCategories />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="suppliers" element={<AdminSuppliers />} />
+                <Route path="customers" element={<AdminCustomers />} />
                 <Route path="settings" element={<div className="p-6">Settings coming soon...</div>} />
               </Route>
             </Route>

@@ -47,7 +47,7 @@ export default function ProductDetail() {
   }
 
   if (!product) {
-    return <div className="text-center py-20 text-gray-500">Product not found.</div>;
+    return <div className="text-center py-20 text-gray-500">Không tìm thấy sản phẩm.</div>;
   }
 
   const fallbackImages = ['https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80&w=800'];
@@ -60,9 +60,9 @@ export default function ProductDetail() {
         
         {/* Breadcrumbs */}
         <nav className="flex items-center text-sm font-medium text-gray-500 mb-10">
-          <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
+          <Link to="/" className="hover:text-gray-900 transition-colors">Trang chủ</Link>
           <ChevronRight size={16} className="mx-2 text-gray-400" />
-          <Link to="/shop" className="hover:text-gray-900 transition-colors">Shop</Link>
+          <Link to="/shop" className="hover:text-gray-900 transition-colors">Cửa hàng</Link>
           <ChevronRight size={16} className="mx-2 text-gray-400" />
           <span className="text-gray-900">{product.name}</span>
         </nav>

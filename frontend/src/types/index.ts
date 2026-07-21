@@ -40,6 +40,10 @@ export interface AuthResponse {
   user: UserResponse;
 }
 
+export interface MessageResponse {
+  message: string;
+}
+
 // Product Types
 export interface CategoryResponse {
   id: number;
