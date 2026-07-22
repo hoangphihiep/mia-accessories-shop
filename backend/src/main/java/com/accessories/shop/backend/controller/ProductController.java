@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -42,9 +43,9 @@ public class ProductController {
     // Tạo sản phẩm: POST http://localhost:8080/api/v1/products
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProductResponse> createProduct(@RequestBody ProductRequest request) {
+    public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest request) {
         Product product = productMapper.toEntity(request);
-        Product savedProduct = productService.createProduct(product, request.getCategoryId(), request.getMaterialId());
+        Product savedProduct = productService.createProduct(product, request.getCategoryId(), request.getMaterialId(), request.getVariants(), request.getImages());
         return ResponseEntity.ok(productMapper.toResponse(savedProduct));
     }
 
@@ -53,9 +54,9 @@ public class ProductController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> updateProduct(
             @PathVariable Long id,
-            @RequestBody ProductRequest request) {
+            @Valid @RequestBody ProductRequest request) {
         Product productDetails = productMapper.toEntity(request);
-        Product updatedProduct = productService.updateProduct(id, productDetails, request.getCategoryId(), request.getMaterialId());
+        Product updatedProduct = productService.updateProduct(id, productDetails, request.getCategoryId(), request.getMaterialId(), request.getVariants(), request.getImages());
         return ResponseEntity.ok(productMapper.toResponse(updatedProduct));
     }
 

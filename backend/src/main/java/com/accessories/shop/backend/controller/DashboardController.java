@@ -12,6 +12,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import com.accessories.shop.backend.repository.OrderDetailRepository;
+import com.accessories.shop.backend.mapper.OrderMapper;
+import com.accessories.shop.backend.dto.response.OrderResponse;
+import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import java.util.List;
 import java.util.Map;
 
@@ -22,24 +30,24 @@ public class DashboardController {
 
     private final OrderRepository orderRepository;
     private final ProductVariantRepository productVariantRepository;
-    private final com.accessories.shop.backend.repository.OrderDetailRepository orderDetailRepository;
-    private final com.accessories.shop.backend.mapper.OrderMapper orderMapper;
+    private final OrderDetailRepository orderDetailRepository;
+    private final OrderMapper orderMapper;
 
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats() {
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
         
         // This Month
-        java.time.LocalDateTime startOfMonth = now.with(java.time.temporal.TemporalAdjusters.firstDayOfMonth()).withHour(0).withMinute(0).withSecond(0);
-        java.time.LocalDateTime endOfMonth = now.with(java.time.temporal.TemporalAdjusters.lastDayOfMonth()).withHour(23).withMinute(59).withSecond(59);
+        LocalDateTime startOfMonth = now.with(TemporalAdjusters.firstDayOfMonth()).withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth()).withHour(23).withMinute(59).withSecond(59);
 
         long ordersThisMonth = orderRepository.countByCreatedAtBetween(startOfMonth, endOfMonth);
         BigDecimal revenueThisMonth = orderRepository.sumTotalRevenueForCompletedOrdersBetween(startOfMonth, endOfMonth);
         if (revenueThisMonth == null) revenueThisMonth = BigDecimal.ZERO;
 
         // Last Month
-        java.time.LocalDateTime startOfLastMonth = startOfMonth.minusMonths(1);
-        java.time.LocalDateTime endOfLastMonth = startOfMonth.minusSeconds(1);
+        LocalDateTime startOfLastMonth = startOfMonth.minusMonths(1);
+        LocalDateTime endOfLastMonth = startOfMonth.minusSeconds(1);
 
         long ordersLastMonth = orderRepository.countByCreatedAtBetween(startOfLastMonth, endOfLastMonth);
         BigDecimal revenueLastMonth = orderRepository.sumTotalRevenueForCompletedOrdersBetween(startOfLastMonth, endOfLastMonth);
@@ -77,9 +85,9 @@ public class DashboardController {
     }
 
     @GetMapping("/recent-orders")
-    public ResponseEntity<List<com.accessories.shop.backend.dto.response.OrderResponse>> getRecentOrders() {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 5);
-        List<com.accessories.shop.backend.dto.response.OrderResponse> recentOrders = orderRepository.findAllByOrderByCreatedAtDesc(pageable)
+    public ResponseEntity<List<OrderResponse>> getRecentOrders() {
+        Pageable pageable = PageRequest.of(0, 5);
+        List<OrderResponse> recentOrders = orderRepository.findAllByOrderByCreatedAtDesc(pageable)
                 .stream()
                 .map(orderMapper::toResponse)
                 .toList();
@@ -87,9 +95,9 @@ public class DashboardController {
     }
     @GetMapping("/daily-revenue")
     public ResponseEntity<List<Map<String, Object>>> getDailyRevenue() {
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        java.time.LocalDateTime startOfMonth = now.with(java.time.temporal.TemporalAdjusters.firstDayOfMonth()).withHour(0).withMinute(0).withSecond(0);
-        java.time.LocalDateTime endOfMonth = now.with(java.time.temporal.TemporalAdjusters.lastDayOfMonth()).withHour(23).withMinute(59).withSecond(59);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfMonth = now.with(TemporalAdjusters.firstDayOfMonth()).withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth()).withHour(23).withMinute(59).withSecond(59);
 
         List<Order> completedOrders = orderRepository.findByStatusAndCreatedAtBetween("COMPLETED", startOfMonth, endOfMonth);
 
@@ -100,7 +108,7 @@ public class DashboardController {
             dailySums.merge(day, order.getTotalAmount(), BigDecimal::add);
         }
 
-        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        List<Map<String, Object>> result = new ArrayList<>();
         int daysInMonth = now.toLocalDate().lengthOfMonth();
         java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
 
@@ -117,11 +125,11 @@ public class DashboardController {
 
     @GetMapping("/top-products")
     public ResponseEntity<List<Map<String, Object>>> getTopProducts() {
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        java.time.LocalDateTime startOfMonth = now.with(java.time.temporal.TemporalAdjusters.firstDayOfMonth()).withHour(0).withMinute(0).withSecond(0);
-        java.time.LocalDateTime endOfMonth = now.with(java.time.temporal.TemporalAdjusters.lastDayOfMonth()).withHour(23).withMinute(59).withSecond(59);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfMonth = now.with(TemporalAdjusters.firstDayOfMonth()).withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth()).withHour(23).withMinute(59).withSecond(59);
 
-        org.springframework.data.domain.Pageable topFive = org.springframework.data.domain.PageRequest.of(0, 5);
+        Pageable topFive = PageRequest.of(0, 5);
         List<Map<String, Object>> topProducts = orderDetailRepository.findTopSellingProducts(startOfMonth, endOfMonth, topFive);
         
         return ResponseEntity.ok(topProducts);

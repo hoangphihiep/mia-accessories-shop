@@ -4,12 +4,25 @@ import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 @Getter
 @Setter
 public class ProductVariantRequest {
+    private Long id;
+
+    @NotBlank(message = "Tên mẫu mã không được để trống")
     private String name;
+
+    @NotNull(message = "Giá bán bắt buộc nhập")
+    @Min(value = 0, message = "Giá bán không được âm")
     private BigDecimal price;
-    private Integer stockQuantity;
+
+    private BigDecimal compareAtPrice;
+
     private String sku;
+    private String imageUrl;
     private Long productId;
 }

@@ -6,6 +6,7 @@ import com.accessories.shop.backend.entity.Category;
 import com.accessories.shop.backend.mapper.CategoryMapper;
 import com.accessories.shop.backend.service.CategoryService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -37,18 +38,15 @@ public class CategoryController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CategoryResponse> createCategory(@RequestBody CategoryRequest request) {
-        Category category = categoryMapper.toEntity(request);
-        Category savedCategory = categoryService.createCategory(category);
+    public ResponseEntity<CategoryResponse> createCategory(@Valid @RequestBody CategoryRequest request) {
+        Category savedCategory = categoryService.createCategory(request);
         return ResponseEntity.ok(categoryMapper.toResponse(savedCategory));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CategoryResponse> updateCategory(@PathVariable Long id, @RequestBody CategoryRequest request) {
-        // Trong kiến trúc thực tế, phần này có thể đưa vào Service
-        Category categoryDetails = categoryMapper.toEntity(request);
-        Category updatedCategory = categoryService.updateCategory(id, categoryDetails);
+    public ResponseEntity<CategoryResponse> updateCategory(@PathVariable Long id, @Valid @RequestBody CategoryRequest request) {
+        Category updatedCategory = categoryService.updateCategory(id, request);
         return ResponseEntity.ok(categoryMapper.toResponse(updatedCategory));
     }
 

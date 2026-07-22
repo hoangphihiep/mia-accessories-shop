@@ -11,7 +11,10 @@ public class ProductVariantResponse {
     private String name;
     private String sku;
     private BigDecimal price;
+    private BigDecimal compareAtPrice;
+    private BigDecimal costPrice;
     private Integer stockQuantity;
     private String imageUrl;
     private Boolean isActive;
+    private String productName;
 }

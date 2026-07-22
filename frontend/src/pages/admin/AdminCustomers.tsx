@@ -5,9 +5,11 @@ import { vi } from 'date-fns/locale';
 import { useCustomers } from '../../hooks/useAdmin';
 import { useQueryClient } from '@tanstack/react-query';
 import { AdminService } from '../../services/admin.service';
+import { useToast } from '../../context/ToastContext';
 
 export default function AdminCustomers() {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(0);
@@ -53,8 +55,9 @@ export default function AdminCustomers() {
         try {
           await AdminService.toggleCustomerStatus(id);
           queryClient.invalidateQueries({ queryKey: ['adminCustomers'] });
+          showToast('Thay đổi trạng thái thành công', 'success');
         } catch (error: any) {
-          alert(error.response?.data?.message || 'Có lỗi xảy ra khi thay đổi trạng thái');
+          showToast(error.response?.data?.message || 'Có lỗi xảy ra khi thay đổi trạng thái', 'error');
         }
       }
     });
@@ -81,7 +84,7 @@ export default function AdminCustomers() {
   }
 
   return (
-    <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 min-h-[calc(100vh-9rem)] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 min-h-[calc(100vh-9rem)] flex flex-col overflow-hidden">
       
       {/* Header & Search */}
       <div className="p-8 border-b border-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/50 backdrop-blur-xl">

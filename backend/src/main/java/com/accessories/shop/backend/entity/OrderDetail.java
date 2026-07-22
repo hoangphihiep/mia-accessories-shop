@@ -29,7 +29,11 @@ public class OrderDetail {
     @Column(nullable = false)
     private Integer quantity;
 
-    // GIÁ CHỐT ĐƠN: Lưu lại giá tiền của Mẫu đó tại thời điểm mua
+    // GIÁ CHỐT ĐƠN: Lưu lại giá bán của Mẫu đó tại thời điểm mua
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
+
+    // GIÁ VỐN CHỐT ĐƠN: Lưu lại giá vốn (để không bị ảnh hưởng lợi nhuận nếu sau này nhập hàng giá khác)
+    @Column(name = "unit_cost", precision = 10, scale = 2)
+    private BigDecimal unitCost = BigDecimal.ZERO;
 }

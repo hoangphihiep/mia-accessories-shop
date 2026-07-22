@@ -12,6 +12,7 @@ import java.util.List;
 public class OrderResponse {
     private Long id;
     private UserResponse user;
+    private UserResponse createdBy;
     private String customerName;
     private String customerPhone;
     private String shippingAddress;

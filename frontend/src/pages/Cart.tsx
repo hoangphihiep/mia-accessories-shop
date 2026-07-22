@@ -3,15 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Minus, Plus, X, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function Cart() {
   const navigate = useNavigate();
   const { cartItems, updateQuantity, removeFromCart, cartTotal } = useCart();
   const { isAuthenticated } = useAuth();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập để xem giỏ hàng!');
+      showToast('Vui lòng đăng nhập để xem giỏ hàng!', 'warning');
       navigate('/login');
     }
   }, [isAuthenticated, navigate]);

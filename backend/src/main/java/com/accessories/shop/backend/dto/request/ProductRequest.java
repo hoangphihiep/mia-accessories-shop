@@ -4,16 +4,33 @@ import lombok.Getter;
 import lombok.Setter;
 import java.util.List;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 @Getter
 @Setter
 public class ProductRequest {
+    @NotBlank(message = "Tên sản phẩm không được để trống")
     private String name;
+    
     private String slug;
     private String description;
+    
+    @NotNull(message = "Trạng thái bắt buộc chọn")
     private Boolean isActive;
+    
+    private Boolean isFeatured;
+    private Boolean isNew;
+    
+    @NotNull(message = "Danh mục bắt buộc chọn")
     private Long categoryId;
+    
+    @NotNull(message = "Chất liệu bắt buộc chọn")
     private Long materialId;
-    // In a full implementation, you would also have requests for variants and images
-    // private List<ProductVariantRequest> variants;
-    // private List<ProductImageRequest> images;
+
+    @Valid
+    private List<ProductVariantRequest> variants;
+    
+    private List<String> images;
 }

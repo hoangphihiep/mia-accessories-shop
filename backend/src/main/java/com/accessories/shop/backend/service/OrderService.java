@@ -12,6 +12,8 @@ import com.accessories.shop.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import com.accessories.shop.backend.exception.ResourceNotFoundException;
+import com.accessories.shop.backend.exception.BadRequestException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -32,7 +34,7 @@ public class OrderService {
         // 1. Lấy Email của người đang đăng nhập từ Security Context
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
 
         // 2. Khởi tạo Đơn hàng (Order)
         Order order = Order.builder()
@@ -51,16 +53,13 @@ public class OrderService {
         // 3. Xử lý từng món hàng trong giỏ
         for (OrderItemRequest itemReq : request.getItems()) {
             ProductVariant variant = productVariantRepository.findById(itemReq.getVariantId())
-                    .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy mẫu sản phẩm với ID: " + itemReq.getVariantId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mẫu sản phẩm với ID: " + itemReq.getVariantId()));
 
-            // Kiểm tra tồn kho
-            if (variant.getStockQuantity() < itemReq.getQuantity()) {
-                throw new com.accessories.shop.backend.exception.BadRequestException("Sản phẩm " + variant.getName() + " không đủ số lượng trong kho!");
+            // Cập nhật tồn kho an toàn (Atomic Update chống Race Condition)
+            int updated = productVariantRepository.decreaseStock(itemReq.getVariantId(), itemReq.getQuantity());
+            if (updated == 0) {
+                throw new BadRequestException("Sản phẩm " + variant.getName() + " đã hết hàng hoặc không đủ số lượng!");
             }
-
-            // Trừ tồn kho
-            variant.setStockQuantity(variant.getStockQuantity() - itemReq.getQuantity());
-            productVariantRepository.save(variant);
 
             // Tính tiền
             BigDecimal itemTotal = variant.getPrice().multiply(BigDecimal.valueOf(itemReq.getQuantity()));
@@ -72,6 +71,7 @@ public class OrderService {
                     .productVariant(variant)
                     .quantity(itemReq.getQuantity())
                     .price(variant.getPrice()) // Lưu cứng giá bán hiện tại
+                    .unitCost(variant.getCostPrice() != null ? variant.getCostPrice() : BigDecimal.ZERO) // Lưu cứng giá vốn hiện tại
                     .build();
 
             order.getOrderDetails().add(orderDetail);
@@ -88,7 +88,7 @@ public class OrderService {
         // POS order can be made by Staff or Admin
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User staff = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
 
         // Xác định Khách hàng thực sự mua (dựa vào số điện thoại)
         User actualCustomer = staff; // Mặc định gán cho Staff nếu không tìm thấy (Khách vãng lai không có SĐT)
@@ -115,14 +115,12 @@ public class OrderService {
 
         for (OrderItemRequest itemReq : request.getItems()) {
             ProductVariant variant = productVariantRepository.findById(itemReq.getVariantId())
-                    .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy mẫu sản phẩm"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mẫu sản phẩm"));
 
-            if (variant.getStockQuantity() < itemReq.getQuantity()) {
-                throw new com.accessories.shop.backend.exception.BadRequestException("Sản phẩm " + variant.getName() + " không đủ số lượng trong kho!");
+            int updated = productVariantRepository.decreaseStock(itemReq.getVariantId(), itemReq.getQuantity());
+            if (updated == 0) {
+                throw new BadRequestException("Sản phẩm " + variant.getName() + " đã hết hàng hoặc không đủ số lượng!");
             }
-
-            variant.setStockQuantity(variant.getStockQuantity() - itemReq.getQuantity());
-            productVariantRepository.save(variant);
 
             BigDecimal itemTotal = variant.getPrice().multiply(BigDecimal.valueOf(itemReq.getQuantity()));
             totalAmount = totalAmount.add(itemTotal);
@@ -132,6 +130,7 @@ public class OrderService {
                     .productVariant(variant)
                     .quantity(itemReq.getQuantity())
                     .price(variant.getPrice())
+                    .unitCost(variant.getCostPrice() != null ? variant.getCostPrice() : BigDecimal.ZERO)
                     .build();
 
             order.getOrderDetails().add(orderDetail);
@@ -143,7 +142,7 @@ public class OrderService {
 
     public List<Order> getUserOrders(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
         return orderRepository.findByUserId(user.getId());
     }
 
@@ -158,18 +157,34 @@ public class OrderService {
     @Transactional
     public Order updateOrderStatus(Long orderId, String newStatus) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy đơn hàng với ID: " + orderId));
-        order.setStatus(newStatus);
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với ID: " + orderId));
         
-        // Nếu hủy đơn hàng, hoàn lại số lượng tồn kho
-        if ("CANCELLED".equals(newStatus)) {
-            for (OrderDetail detail : order.getOrderDetails()) {
-                ProductVariant variant = detail.getProductVariant();
-                variant.setStockQuantity(variant.getStockQuantity() + detail.getQuantity());
-                productVariantRepository.save(variant);
+        String currentStatus = order.getStatus();
+
+        // Kiểm tra State Machine
+        if (newStatus.equals("CANCELLED")) {
+            if (!currentStatus.equals("PENDING")) {
+                throw new BadRequestException("Chỉ có thể hủy đơn hàng khi đang chờ xử lý.");
             }
+            // Hoàn lại số lượng tồn kho an toàn (Atomic)
+            for (OrderDetail detail : order.getOrderDetails()) {
+                productVariantRepository.increaseStock(detail.getProductVariant().getId(), detail.getQuantity());
+            }
+        } else if (newStatus.equals("SHIPPING")) {
+            if (!currentStatus.equals("PENDING")) {
+                throw new BadRequestException("Chỉ có thể chuyển sang giao hàng từ trạng thái chờ xử lý.");
+            }
+        } else if (newStatus.equals("COMPLETED")) {
+            if (!currentStatus.equals("SHIPPING")) {
+                throw new BadRequestException("Chỉ có thể hoàn thành đơn hàng đang giao.");
+            }
+            // Tự động cập nhật đã thanh toán khi giao hàng thành công (dành cho COD)
+            order.setIsPaid(true);
+        } else {
+            throw new BadRequestException("Trạng thái không hợp lệ: " + newStatus);
         }
-        
+
+        order.setStatus(newStatus);
         return orderRepository.save(order);
     }
 }

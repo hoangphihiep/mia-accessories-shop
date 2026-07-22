@@ -9,4 +9,5 @@ public class MaterialResponse {
     private Long id;
     private String name;
     private String slug;
+    private String careInstructions;
 }

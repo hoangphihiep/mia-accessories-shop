@@ -18,4 +18,7 @@ public class ReviewRequest {
     @NotBlank(message = "Nội dung đánh giá không được để trống")
     @Size(max = 500, message = "Nội dung đánh giá không được vượt quá 500 ký tự")
     private String comment;
+    private String variantName;
+    
+    private java.util.List<String> images;
 }

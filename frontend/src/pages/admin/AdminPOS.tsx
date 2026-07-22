@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { ShoppingCart, Search, Plus, Minus, Trash2, CheckCircle, CreditCard, Banknote, User, Phone, PackageOpen, Printer, X, Bookmark, Clock, Loader2 } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 import api from '../../services/api';
 
 export default function AdminPOS() {
@@ -33,6 +35,9 @@ export default function AdminPOS() {
   // Receipt Modal State
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastOrder, setLastOrder] = useState<any>(null);
+  
+  const [confirmRestoreId, setConfirmRestoreId] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -121,13 +126,16 @@ export default function AdminPOS() {
   }, [products, searchTerm, selectedCategory]);
 
   const addToCart = (variant: any) => {
-    if (variant.stockQuantity <= 0) return alert('Sản phẩm đã hết hàng!');
+    if (variant.stockQuantity <= 0) {
+      showToast('Sản phẩm đã hết hàng!', 'error');
+      return;
+    }
     
     setCart(prev => {
       const existing = prev.find(item => item.variantId === variant.id);
       if (existing) {
         if (existing.quantity >= variant.stockQuantity) {
-          alert('Không đủ tồn kho!');
+          showToast('Không đủ tồn kho!', 'error');
           return prev;
         }
         return prev.map(item => item.variantId === variant.id ? { ...item, quantity: item.quantity + 1 } : item);
@@ -148,7 +156,7 @@ export default function AdminPOS() {
       if (item.variantId === variantId) {
         const newQ = item.quantity + delta;
         if (newQ > item.stock) {
-          alert('Không đủ tồn kho!');
+          showToast('Không đủ tồn kho!', 'error');
           return item;
         }
         if (newQ < 1) return item;
@@ -194,9 +202,17 @@ export default function AdminPOS() {
     if (!held) return;
     
     if (cart.length > 0) {
-      if (!window.confirm('Giỏ hàng hiện tại đang có sản phẩm. Bạn có muốn ghi đè không?')) return;
+      setConfirmRestoreId(orderId);
+      return;
     }
     
+    executeRestoreOrder(orderId);
+  };
+
+  const executeRestoreOrder = (orderId: string) => {
+    const held = heldOrders.find(o => o.id === orderId);
+    if (!held) return;
+
     setCart(held.cart);
     setCustomerName(held.customerName || '');
     setCustomerPhone(held.customerPhone || '');
@@ -207,6 +223,7 @@ export default function AdminPOS() {
     setHeldOrders(updated);
     localStorage.setItem('pos_held_orders', JSON.stringify(updated));
     setShowHeldOrders(false);
+    setConfirmRestoreId(null);
   };
   
   const handleRemoveHeldOrder = (orderId: string) => {
@@ -216,9 +233,13 @@ export default function AdminPOS() {
   };
 
   const handleCheckout = async () => {
-    if (cart.length === 0) return alert('Giỏ hàng trống!');
+    if (cart.length === 0) {
+      showToast('Giỏ hàng trống!', 'error');
+      return;
+    }
     if (paymentMethod === 'CASH' && numericAmountGiven > 0 && numericAmountGiven < totalAmount) {
-      return alert('Tiền khách đưa không đủ!');
+      showToast('Tiền khách đưa không đủ!', 'error');
+      return;
     }
 
     try {
@@ -228,18 +249,19 @@ export default function AdminPOS() {
         paymentMethod: paymentMethod,
         items: cart.map(item => ({ variantId: item.variantId, quantity: item.quantity }))
       };
-      await api.post('/admin/orders/pos', payload);
+      const response = await api.post('/admin/orders/pos', payload);
       
-      // Save order for receipt
+      // Save order for receipt with Server Data
       setLastOrder({
+        id: response.data.id,
         cart: [...cart],
-        customerName: customerName.trim() || 'Khách vãng lai',
-        customerPhone: customerPhone.trim(),
-        paymentMethod,
-        totalAmount,
-        amountGiven: paymentMethod === 'CASH' ? (numericAmountGiven || totalAmount) : totalAmount,
-        change,
-        date: new Date().toLocaleString('vi-VN')
+        customerName: response.data.customerName || 'Khách vãng lai',
+        customerPhone: response.data.customerPhone || '',
+        paymentMethod: response.data.paymentMethod,
+        totalAmount: response.data.totalAmount,
+        amountGiven: paymentMethod === 'CASH' ? (numericAmountGiven || response.data.totalAmount) : response.data.totalAmount,
+        change: paymentMethod === 'CASH' ? Math.max(0, numericAmountGiven - response.data.totalAmount) : 0,
+        date: response.data.createdAt ? new Date(response.data.createdAt).toLocaleString('vi-VN') : new Date().toLocaleString('vi-VN')
       });
       setShowReceipt(true);
       
@@ -253,7 +275,7 @@ export default function AdminPOS() {
       const prodRes = await api.get('/products?size=100');
       setProducts(prodRes.data.content || prodRes.data);
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Có lỗi xảy ra khi thanh toán');
+      showToast(error.response?.data?.message || 'Có lỗi xảy ra khi thanh toán', 'error');
     }
   };
 
@@ -630,6 +652,17 @@ export default function AdminPOS() {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={confirmRestoreId !== null}
+        title="Ghi đè giỏ hàng"
+        message="Giỏ hàng hiện tại đang có sản phẩm. Bạn có chắc chắn muốn xóa giỏ hàng hiện tại để phục hồi đơn này không?"
+        confirmText="Ghi đè"
+        onConfirm={() => {
+          if (confirmRestoreId) executeRestoreOrder(confirmRestoreId);
+        }}
+        onCancel={() => setConfirmRestoreId(null)}
+      />
     </>
   );
 }

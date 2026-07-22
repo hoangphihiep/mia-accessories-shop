@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import com.accessories.shop.backend.repository.SupplierRepository;
 import com.accessories.shop.backend.entity.Supplier;
+import com.accessories.shop.backend.exception.ResourceNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -32,21 +33,22 @@ public class InventoryService {
         return inventoryReceiptRepository.findAll();
     }
 
+    public List<InventoryReceipt> getReceiptsBySupplierId(Long supplierId) {
+        return inventoryReceiptRepository.findBySupplierEntityIdOrderByCreatedAtDesc(supplierId);
+    }
+
     @Transactional
     public InventoryReceipt createReceipt(InventoryReceiptRequest request) {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
 
-        Supplier supplierEntity = null;
-        if (request.getSupplierId() != null) {
-            supplierEntity = supplierRepository.findById(request.getSupplierId())
-                    .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy Nhà cung cấp"));
-        }
+        Supplier supplierEntity = supplierRepository.findById(request.getSupplierId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Nhà cung cấp"));
 
         InventoryReceipt receipt = InventoryReceipt.builder()
                 .createdBy(user)
-                .supplier(request.getSupplier())
+                .supplier(supplierEntity.getName())
                 .supplierEntity(supplierEntity)
                 .details(new ArrayList<>())
                 .build();
@@ -55,10 +57,32 @@ public class InventoryService {
 
         for (InventoryReceiptRequest.ReceiptDetailReq reqDetail : request.getDetails()) {
             ProductVariant variant = productVariantRepository.findById(reqDetail.getVariantId())
-                    .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Không tìm thấy mẫu sản phẩm"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể sản phẩm"));
 
-            // Tăng số lượng tồn kho
-            variant.setStockQuantity(variant.getStockQuantity() + reqDetail.getQuantity());
+            // Tính toán giá vốn bình quân gia quyền (MAC)
+            int currentStock = variant.getStockQuantity() != null ? variant.getStockQuantity() : 0;
+            BigDecimal currentCost = variant.getCostPrice() != null ? variant.getCostPrice() : BigDecimal.ZERO;
+            
+            int incomingQty = reqDetail.getQuantity();
+            BigDecimal incomingPrice = reqDetail.getUnitPrice();
+
+            if (currentStock <= 0) {
+                // Nếu kho hết hàng hoặc âm, lấy luôn giá nhập mới làm giá vốn
+                variant.setCostPrice(incomingPrice);
+            } else {
+                // Tính trung bình
+                BigDecimal totalCurrentValue = currentCost.multiply(BigDecimal.valueOf(currentStock));
+                BigDecimal totalIncomingValue = incomingPrice.multiply(BigDecimal.valueOf(incomingQty));
+                BigDecimal newTotalValue = totalCurrentValue.add(totalIncomingValue);
+                BigDecimal newTotalStock = BigDecimal.valueOf(currentStock + incomingQty);
+                
+                // Chia để ra giá mới (làm tròn 2 chữ số thập phân, chế độ HALF_UP)
+                BigDecimal newCost = newTotalValue.divide(newTotalStock, 2, java.math.RoundingMode.HALF_UP);
+                variant.setCostPrice(newCost);
+            }
+
+            // Cập nhật số lượng tồn kho
+            variant.setStockQuantity(currentStock + incomingQty);
             productVariantRepository.save(variant);
 
             BigDecimal detailTotal = reqDetail.getUnitPrice().multiply(BigDecimal.valueOf(reqDetail.getQuantity()));
@@ -77,10 +101,8 @@ public class InventoryService {
         receipt.setTotalCost(totalCost);
 
         // Cộng nợ cho nhà cung cấp
-        if (supplierEntity != null) {
-            supplierEntity.setDebt(supplierEntity.getDebt().add(totalCost));
-            supplierRepository.save(supplierEntity);
-        }
+        supplierEntity.setDebt(supplierEntity.getDebt().add(totalCost));
+        supplierRepository.save(supplierEntity);
 
         return inventoryReceiptRepository.save(receipt);
     }

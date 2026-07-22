@@ -31,6 +31,6 @@ public class Category {
     @Column(nullable = false)
     private Boolean status;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
     private List<Product> products;
 }

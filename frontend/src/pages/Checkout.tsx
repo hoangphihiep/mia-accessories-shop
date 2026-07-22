@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useToast } from '../context/ToastContext';
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { cartItems, cartTotal, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -21,7 +23,7 @@ export default function Checkout() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập để đặt hàng!');
+      showToast('Vui lòng đăng nhập để đặt hàng!', 'warning');
       navigate('/login');
     }
   }, [isAuthenticated, navigate]);
@@ -35,7 +37,7 @@ export default function Checkout() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cartItems.length === 0) {
-      alert('Giỏ hàng của bạn đang trống!');
+      showToast('Giỏ hàng của bạn đang trống!', 'warning');
       return;
     }
     
@@ -64,12 +66,12 @@ export default function Checkout() {
         window.location.href = paymentResponse.data.paymentUrl;
       } else {
         clearCart();
-        alert('Đặt hàng thành công!');
+        showToast('Đặt hàng thành công!', 'success');
         navigate('/payment-success');
       }
     } catch (error) {
       console.error('Lỗi khi đặt hàng:', error);
-      alert('Đã xảy ra lỗi khi đặt hàng, vui lòng thử lại.');
+      showToast('Đã xảy ra lỗi khi đặt hàng, vui lòng thử lại.', 'error');
     } finally {
       setLoading(false);
     }

@@ -7,10 +7,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useUsers } from '../../hooks/useAdmin';
 import { useQueryClient } from '@tanstack/react-query';
 import { AdminService } from '../../services/admin.service';
+import { useToast } from '../../context/ToastContext';
 
 export default function AdminUsers() {
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(0);
@@ -58,7 +60,7 @@ export default function AdminUsers() {
       setIsCreateModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Có lỗi xảy ra khi tạo nhân viên');
+      showToast(error.response?.data?.message || 'Có lỗi xảy ra khi tạo nhân viên', 'error');
     } finally {
       setIsCreating(false);
     }
@@ -76,8 +78,9 @@ export default function AdminUsers() {
         try {
           await api.put(`/admin/users/${id}/status`);
           queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+          showToast('Thay đổi trạng thái thành công', 'success');
         } catch (error: any) {
-          alert(error.response?.data?.message || 'Có lỗi xảy ra khi thay đổi trạng thái');
+          showToast(error.response?.data?.message || 'Có lỗi xảy ra khi thay đổi trạng thái', 'error');
         }
       }
     });
@@ -104,7 +107,8 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 min-h-[calc(100vh-9rem)] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="relative flex w-full h-[calc(100vh-6rem)] overflow-hidden">
+      <div className="flex-1 flex flex-col bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
       
       {/* Header & Search */}
       <div className="p-8 border-b border-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/50 backdrop-blur-xl">
@@ -144,30 +148,40 @@ export default function AdminUsers() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50/50 text-gray-400 text-[11px] font-black uppercase tracking-[0.2em]">
-              <th className="p-5 pl-8 border-b border-gray-100">Người dùng</th>
-              <th className="p-5 border-b border-gray-100">SĐT</th>
-              <th className="p-5 border-b border-gray-100">Vai trò</th>
-              <th className="p-5 border-b border-gray-100">Ngày vào làm</th>
-              <th className="p-5 border-b border-gray-100">Trạng thái</th>
-              <th className="p-5 pr-8 border-b border-gray-100 text-right">Thao tác</th>
+              <th className="p-4 md:p-5 pl-4 md:pl-8 border-b border-gray-100">Người dùng</th>
+              <th className="p-4 md:p-5 border-b border-gray-100 hidden lg:table-cell">SĐT</th>
+              <th className="p-4 md:p-5 border-b border-gray-100 hidden sm:table-cell">Vai trò</th>
+              <th className="p-4 md:p-5 border-b border-gray-100 hidden lg:table-cell">Ngày vào làm</th>
+              <th className="p-4 md:p-5 border-b border-gray-100 hidden md:table-cell">Trạng thái</th>
+              <th className="p-4 md:p-5 pr-4 md:pr-8 border-b border-gray-100 text-right">Thao tác</th>
             </tr>
           </thead>
           <tbody className="text-sm">
             {users.map((u: any) => (
               <tr key={u.id} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors group">
-                <td className="p-5 pl-8">
+                <td className="p-4 md:p-5 pl-4 md:pl-8">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-900 to-gray-700 flex items-center justify-center text-white font-black text-xs uppercase shadow-sm">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-900 to-gray-700 flex items-center justify-center text-white font-black text-xs uppercase shadow-sm shrink-0">
                       {u.fullName?.substring(0, 2) || 'US'}
                     </div>
-                    <div>
-                      <div className="font-bold text-gray-900">{u.fullName}</div>
-                      <div className="text-[11px] font-bold tracking-wider text-gray-400 mt-0.5">{u.email}</div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-gray-900 truncate">{u.fullName}</div>
+                      <div className="text-[11px] font-bold tracking-wider text-gray-400 mt-0.5 truncate">{u.email}</div>
+                      {/* Mobile Role & Status Tags */}
+                      <div className="flex items-center gap-2 mt-1 sm:hidden">
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border
+                          ${u.role.name === 'ROLE_ADMIN' ? 'bg-purple-50 text-purple-600 border-purple-100' : 
+                            u.role.name === 'ROLE_STAFF' ? 'bg-blue-50 text-blue-600 border-blue-100' : 
+                            'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                          {u.role.name.replace('ROLE_', '')}
+                        </span>
+                        {!u.isActive && <span className="text-rose-600 text-[10px]"><Ban size={12} /></span>}
+                      </div>
                     </div>
                   </div>
                 </td>
-                <td className="p-5 text-gray-500 font-medium">{u.phone || '-'}</td>
-                <td className="p-5">
+                <td className="p-4 md:p-5 text-gray-500 font-medium hidden lg:table-cell">{u.phone || '-'}</td>
+                <td className="p-4 md:p-5 hidden sm:table-cell">
                   <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border
                     ${u.role.name === 'ROLE_ADMIN' ? 'bg-purple-50 text-purple-600 border-purple-100' : 
                       u.role.name === 'ROLE_STAFF' ? 'bg-blue-50 text-blue-600 border-blue-100' : 
@@ -175,17 +189,17 @@ export default function AdminUsers() {
                     {u.role.name.replace('ROLE_', '')}
                   </span>
                 </td>
-                <td className="p-5 text-gray-500 font-medium">
+                <td className="p-4 md:p-5 text-gray-500 font-medium hidden lg:table-cell">
                   {u.createdAt ? format(new Date(u.createdAt), 'dd/MM/yyyy', { locale: vi }) : '-'}
                 </td>
-                <td className="p-5">
+                <td className="p-4 md:p-5 hidden md:table-cell">
                   {u.isActive ? (
                     <span className="flex items-center text-emerald-600 font-bold text-xs"><CheckCircle size={14} className="mr-1" /> Hoạt động</span>
                   ) : (
                     <span className="flex items-center text-rose-600 font-bold text-xs"><Ban size={14} className="mr-1" /> Bị khóa</span>
                   )}
                 </td>
-                <td className="p-5 pr-8 text-right space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <td className="p-4 md:p-5 pr-4 md:pr-8 text-right space-x-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                   {u.role.name !== 'ROLE_ADMIN' && currentUser?.email !== u.email && (
                     <button 
                       onClick={() => toggleStatus(u.id, u.isActive)} 
@@ -237,91 +251,102 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {/* Create Staff Modal */}
+      </div>
+
+      {/* Backdrop Overlay */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="p-6 border-b border-gray-50 flex justify-between items-center">
-              <div>
-                <h3 className="text-xl font-black text-gray-900">Tạo Nhân Viên</h3>
-                <p className="text-gray-400 text-sm mt-1">Cấp tài khoản có sẵn quyền quản trị</p>
-              </div>
-              <button onClick={() => setIsCreateModalOpen(false)} className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-                <X size={20} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleCreateStaff}>
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Họ & Tên</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={createStaffForm.fullName}
-                    onChange={e => setCreateStaffForm({...createStaffForm, fullName: e.target.value})}
-                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all"
-                    placeholder="Nguyễn Văn A"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Email Đăng nhập</label>
-                  <input 
-                    type="email" 
-                    required
-                    value={createStaffForm.email}
-                    onChange={e => setCreateStaffForm({...createStaffForm, email: e.target.value})}
-                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all"
-                    placeholder="nhanvien@shop.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Số điện thoại</label>
-                  <input 
-                    type="tel" 
-                    required
-                    value={createStaffForm.phone}
-                    onChange={e => setCreateStaffForm({...createStaffForm, phone: e.target.value})}
-                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all"
-                    placeholder="0912345678"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Mật khẩu khởi tạo</label>
-                  <input 
-                    type="password" 
-                    required
-                    minLength={6}
-                    value={createStaffForm.password}
-                    onChange={e => setCreateStaffForm({...createStaffForm, password: e.target.value})}
-                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary/20 transition-all"
-                    placeholder="******"
-                  />
-                </div>
-              </div>
-              
-              <div className="p-6 bg-gray-50/50 border-t border-gray-50 flex gap-3 justify-end">
-                <button 
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-6 py-3 rounded-full text-sm font-bold text-gray-600 hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-200 transition-all"
-                >
-                  Hủy
-                </button>
-                <button 
-                  type="submit"
-                  disabled={isCreating}
-                  className="px-6 py-3 rounded-full text-sm font-bold text-white bg-primary hover:bg-gray-900 shadow-lg shadow-primary/30 transition-all disabled:opacity-50 flex items-center"
-                >
-                  {isCreating ? (
-                    <><div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2"></div> Đang tạo...</>
-                  ) : 'Xác nhận tạo'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <div 
+          className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 transition-opacity animate-in fade-in duration-300"
+          onClick={() => setIsCreateModalOpen(false)}
+        />
       )}
+
+      {/* Side Drawer */}
+      <div 
+        className={`fixed top-0 right-0 h-screen w-full lg:w-[400px] bg-white shadow-2xl border-l border-gray-100 flex flex-col transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-50 ${
+          isCreateModalOpen ? 'translate-x-0' : 'translate-x-[110%]'
+        }`}
+      >
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-3xl shrink-0">
+          <div>
+            <h3 className="font-black text-xl text-gray-900">Thêm Nhân Viên</h3>
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mt-1">
+              Cấp tài khoản quản trị
+            </p>
+          </div>
+          <button 
+            onClick={() => setIsCreateModalOpen(false)}
+            className="p-2 bg-white text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all shadow-sm border border-gray-200"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+          <form id="userForm" onSubmit={handleCreateStaff} className="space-y-6">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Họ & Tên <span className="text-red-500">*</span></label>
+              <input 
+                type="text" 
+                required
+                value={createStaffForm.fullName}
+                onChange={e => setCreateStaffForm({...createStaffForm, fullName: e.target.value})}
+                className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-bold focus:outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
+                placeholder="Nguyễn Văn A"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Email Đăng nhập <span className="text-red-500">*</span></label>
+              <input 
+                type="email" 
+                required
+                value={createStaffForm.email}
+                onChange={e => setCreateStaffForm({...createStaffForm, email: e.target.value})}
+                className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-medium focus:outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
+                placeholder="nhanvien@shop.com"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Số điện thoại <span className="text-red-500">*</span></label>
+              <input 
+                type="tel" 
+                required
+                value={createStaffForm.phone}
+                onChange={e => setCreateStaffForm({...createStaffForm, phone: e.target.value})}
+                className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-medium focus:outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
+                placeholder="0912345678"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Mật khẩu khởi tạo <span className="text-red-500">*</span></label>
+              <input 
+                type="password" 
+                required
+                minLength={6}
+                value={createStaffForm.password}
+                onChange={e => setCreateStaffForm({...createStaffForm, password: e.target.value})}
+                className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-medium focus:outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
+                placeholder="******"
+              />
+            </div>
+          </form>
+        </div>
+
+        <div className="p-6 border-t border-gray-100 bg-white rounded-b-3xl shrink-0">
+          <button 
+            type="submit" 
+            form="userForm"
+            disabled={isCreating}
+            className="w-full py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition-all shadow-lg shadow-gray-900/20 flex items-center justify-center gap-2 hover:-translate-y-0.5 disabled:opacity-50"
+          >
+            {isCreating ? (
+              <><div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2"></div> Đang tạo...</>
+            ) : (
+              'XÁC NHẬN TẠO'
+            )}
+          </button>
+        </div>
+      </div>
 
       {/* Custom Confirm Modal */}
       {modalConfig.isOpen && (

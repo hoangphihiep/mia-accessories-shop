@@ -8,4 +8,5 @@ import lombok.Setter;
 public class MaterialRequest {
     private String name;
     private String slug;
+    private String careInstructions;
 }

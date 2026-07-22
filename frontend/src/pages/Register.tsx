@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRegister } from '../hooks/useAuthMutations';
+import { useToast } from '../context/ToastContext';
 
 const registerSchema = z.object({
   firstName: z.string().min(1, 'Vui lòng nhập tên').max(50),
@@ -18,6 +19,7 @@ export default function Register() {
   const [apiError, setApiError] = useState('');
   const { mutateAsync: registerMutation, isPending } = useRegister();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const {
     register,
@@ -154,7 +156,7 @@ export default function Register() {
               <div className="mt-6 grid grid-cols-2 gap-4">
                 <button
                   type="button"
-                  onClick={() => alert('Tính năng đang phát triển')}
+                  onClick={() => showToast('Tính năng đang phát triển', 'info')}
                   className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
@@ -164,7 +166,7 @@ export default function Register() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => alert('Tính năng đang phát triển')}
+                  onClick={() => showToast('Tính năng đang phát triển', 'info')}
                   className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <svg className="h-5 w-5 mr-2 text-[#1877F2]" viewBox="0 0 24 24" fill="currentColor">

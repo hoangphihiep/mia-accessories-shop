@@ -27,12 +27,21 @@
   }
   
   /* Dark mode scrollbar for sidebar */
-  .aside .custom-scrollbar::-webkit-scrollbar-thumb {
+  aside .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-gray-800;
   }
-  .aside .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  aside .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-gray-700;
   }
+}
+
+@keyframes page-transition {
+  0% { opacity: 0; transform: translateY(24px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-page-transition {
+  animation: page-transition 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @media print {

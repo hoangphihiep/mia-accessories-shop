@@ -7,9 +7,17 @@ import com.accessories.shop.backend.exception.ResourceNotFoundException;
 import com.accessories.shop.backend.mapper.UserMapper;
 import com.accessories.shop.backend.repository.RoleRepository;
 import com.accessories.shop.backend.repository.UserRepository;
+import com.accessories.shop.backend.exception.BadRequestException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import com.accessories.shop.backend.dto.request.RegisterRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,16 +32,16 @@ public class AdminUserController {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
-    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
     @GetMapping
-    public ResponseEntity<org.springframework.data.domain.Page<UserResponse>> getAllUsers(
+    public ResponseEntity<Page<UserResponse>> getAllUsers(
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("id").descending());
-        org.springframework.data.domain.Page<UserResponse> responses = userRepository.searchUsers(keyword, pageable)
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Page<UserResponse> responses = userRepository.searchUsers(keyword, pageable)
                 .map(userMapper::toResponse);
         return ResponseEntity.ok(responses);
     }
@@ -45,7 +53,7 @@ public class AdminUserController {
         
         // Không cho phép tự khóa chính mình hoặc quản trị viên khác
         if (user.getRole().getName().equals("ROLE_ADMIN")) {
-            throw new com.accessories.shop.backend.exception.BadRequestException("Không thể khóa tài khoản của Quản trị viên tối cao (ADMIN)");
+            throw new BadRequestException("Không thể khóa tài khoản của Quản trị viên tối cao (ADMIN)");
         }
 
         user.setIsActive(!user.getIsActive());
@@ -54,9 +62,9 @@ public class AdminUserController {
     }
 
     @PostMapping("/staff")
-    public ResponseEntity<UserResponse> createStaff(@jakarta.validation.Valid @RequestBody com.accessories.shop.backend.dto.request.RegisterRequest request) {
+    public ResponseEntity<UserResponse> createStaff(@Valid @RequestBody RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new com.accessories.shop.backend.exception.BadRequestException("Email đã được sử dụng. Vui lòng chọn email khác.");
+            throw new BadRequestException("Email đã được sử dụng. Vui lòng chọn email khác.");
         }
 
         Role staffRole = roleRepository.findByName("ROLE_STAFF")

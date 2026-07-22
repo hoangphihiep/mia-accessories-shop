@@ -41,8 +41,11 @@ public class ProductVariantController {
         ProductVariant variant = new ProductVariant();
         variant.setName(request.getName());
         variant.setPrice(request.getPrice());
-        variant.setStockQuantity(request.getStockQuantity());
+        variant.setCompareAtPrice(request.getCompareAtPrice());
+        variant.setStockQuantity(0);
+        variant.setCostPrice(java.math.BigDecimal.ZERO);
         variant.setSku(request.getSku());
+        variant.setImageUrl(request.getImageUrl());
         
         ProductVariant savedVariant = productVariantService.createVariant(variant, request.getProductId());
         return ResponseEntity.ok(productMapper.toVariantResponse(savedVariant));
@@ -57,8 +60,9 @@ public class ProductVariantController {
         ProductVariant variantDetails = new ProductVariant();
         variantDetails.setName(request.getName());
         variantDetails.setPrice(request.getPrice());
-        variantDetails.setStockQuantity(request.getStockQuantity());
+        variantDetails.setCompareAtPrice(request.getCompareAtPrice());
         variantDetails.setSku(request.getSku());
+        variantDetails.setImageUrl(request.getImageUrl());
         
         ProductVariant updatedVariant = productVariantService.updateVariant(id, variantDetails, request.getProductId());
         return ResponseEntity.ok(productMapper.toVariantResponse(updatedVariant));

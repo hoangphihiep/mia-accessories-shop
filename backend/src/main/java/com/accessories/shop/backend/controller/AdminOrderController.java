@@ -1,5 +1,6 @@
 package com.accessories.shop.backend.controller;
 
+import com.accessories.shop.backend.dto.request.OrderRequest;
 import com.accessories.shop.backend.dto.response.OrderResponse;
 import com.accessories.shop.backend.entity.Order;
 import com.accessories.shop.backend.mapper.OrderMapper;
@@ -36,7 +37,7 @@ public class AdminOrderController {
     }
 
     @PostMapping("/pos")
-    public ResponseEntity<OrderResponse> placePosOrder(@RequestBody com.accessories.shop.backend.dto.request.OrderRequest request) {
+    public ResponseEntity<OrderResponse> placePosOrder(@RequestBody OrderRequest request) {
         Order order = orderService.placePosOrder(request);
         return ResponseEntity.ok(orderMapper.toResponse(order));
     }

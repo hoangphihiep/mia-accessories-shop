@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import api from '../services/api';
 import { Search } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 export default function OrderTracking() {
   const [phone, setPhone] = useState('');
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const { showToast } = useToast();
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,7 +21,7 @@ export default function OrderTracking() {
       setHasSearched(true);
     } catch (err) {
       console.error(err);
-      alert('Không tìm thấy đơn hàng hoặc có lỗi xảy ra.');
+      showToast('Không tìm thấy đơn hàng hoặc có lỗi xảy ra.', 'error');
     } finally {
       setLoading(false);
     }

@@ -13,6 +13,10 @@ public class ProductResponse {
     private String slug;
     private String description;
     private Boolean isActive;
+    private Boolean isFeatured;
+    private Boolean isNew;
+    private Double averageRating;
+    private Integer totalReviews;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     

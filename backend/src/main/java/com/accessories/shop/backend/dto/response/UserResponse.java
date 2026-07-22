@@ -2,6 +2,8 @@ package com.accessories.shop.backend.dto.response;
 
 import lombok.Getter;
 import lombok.Setter;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -12,11 +14,11 @@ public class UserResponse {
     private String phone;
     private String address;
     private Boolean isActive;
-    private java.time.LocalDateTime createdAt;
+    private LocalDateTime createdAt;
     private RoleResponse role;
     
     // CRM Fields (Chỉ dành cho Khách hàng)
     private Long totalOrders;
-    private java.math.BigDecimal totalSpent;
+    private BigDecimal totalSpent;
     private String customerTier;
 }

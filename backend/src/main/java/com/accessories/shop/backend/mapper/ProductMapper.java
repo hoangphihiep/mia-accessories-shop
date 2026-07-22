@@ -16,15 +16,20 @@ public interface ProductMapper {
 
     ProductResponse toResponse(Product product);
     
+    @Mapping(source = "product.name", target = "productName")
     ProductVariantResponse toVariantResponse(ProductVariant variant);
     
     ProductImageResponse toImageResponse(ProductImage image);
 
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "material", ignore = true)
+    @Mapping(target = "variants", ignore = true)
+    @Mapping(target = "images", ignore = true)
     Product toEntity(ProductRequest request);
 
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "material", ignore = true)
+    @Mapping(target = "variants", ignore = true)
+    @Mapping(target = "images", ignore = true)
     void updateEntityFromRequest(ProductRequest request, @MappingTarget Product product);
 }

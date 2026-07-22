@@ -4,7 +4,14 @@ import com.accessories.shop.backend.dto.response.UserResponse;
 import com.accessories.shop.backend.entity.User;
 import com.accessories.shop.backend.exception.ResourceNotFoundException;
 import com.accessories.shop.backend.mapper.UserMapper;
+import com.accessories.shop.backend.repository.OrderRepository;
 import com.accessories.shop.backend.repository.UserRepository;
+import com.accessories.shop.backend.exception.BadRequestException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,16 +25,16 @@ public class AdminCustomerController {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final com.accessories.shop.backend.repository.OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
 
     @GetMapping
-    public ResponseEntity<org.springframework.data.domain.Page<UserResponse>> getAllCustomers(
+    public ResponseEntity<Page<UserResponse>> getAllCustomers(
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("id").descending());
-        org.springframework.data.domain.Page<UserResponse> responses = userRepository.searchCustomers(keyword, pageable)
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Page<UserResponse> responses = userRepository.searchCustomers(keyword, pageable)
                 .map(user -> {
                     UserResponse response = userMapper.toResponse(user);
                     long totalOrders = orderRepository.countByUserIdAndStatus(user.getId(), "COMPLETED");
@@ -41,11 +48,11 @@ public class AdminCustomerController {
                     response.setTotalSpent(totalSpent);
                     
                     String tier = "MEMBER";
-                    if (totalSpent.compareTo(new java.math.BigDecimal("20000000")) >= 0) {
+                    if (totalSpent.compareTo(new BigDecimal("20000000")) >= 0) {
                         tier = "DIAMOND";
-                    } else if (totalSpent.compareTo(new java.math.BigDecimal("5000000")) >= 0) {
+                    } else if (totalSpent.compareTo(new BigDecimal("5000000")) >= 0) {
                         tier = "GOLD";
-                    } else if (totalSpent.compareTo(new java.math.BigDecimal("1000000")) >= 0) {
+                    } else if (totalSpent.compareTo(new BigDecimal("1000000")) >= 0) {
                         tier = "SILVER";
                     }
                     response.setCustomerTier(tier);
@@ -61,7 +68,7 @@ public class AdminCustomerController {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khách hàng"));
         
         if (!user.getRole().getName().equals("ROLE_CUSTOMER")) {
-            throw new com.accessories.shop.backend.exception.BadRequestException("Đây không phải là tài khoản khách hàng");
+            throw new BadRequestException("Đây không phải là tài khoản khách hàng");
         }
 
         user.setIsActive(!user.getIsActive());

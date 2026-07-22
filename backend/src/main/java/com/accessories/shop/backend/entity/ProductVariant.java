@@ -41,7 +41,13 @@ public class ProductVariant {
     private String sku; // Mã lưu kho (Tùy chọn)
 
     @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal price; // Giá tiền của mẫu này
+    private BigDecimal price; // Giá bán lẻ của mẫu này
+
+    @Column(name = "cost_price", precision = 10, scale = 2)
+    private BigDecimal costPrice = BigDecimal.ZERO; // Giá vốn bình quân (MAC)
+
+    @Column(name = "compare_at_price", precision = 10, scale = 2)
+    private BigDecimal compareAtPrice; // Giá niêm yết (Gạch ngang)
 
     @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity; // Số lượng tồn kho

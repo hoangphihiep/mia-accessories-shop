@@ -9,7 +9,11 @@ import com.accessories.shop.backend.repository.UserRepository;
 import com.accessories.shop.backend.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
+import java.util.ArrayList;
+import com.accessories.shop.backend.exception.ResourceNotFoundException;
 
 @Service
 @RequiredArgsConstructor
@@ -19,9 +23,9 @@ public class ReviewService {
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
 
-    public Review addReview(String email, Long productId, Integer rating, String comment) {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Người dùng không tồn tại"));
-        Product product = productRepository.findById(productId).orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Sản phẩm không tồn tại"));
+    public Review addReview(String email, Long productId, Integer rating, String comment, List<String> images, String variantName) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+        Product product = productRepository.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));
         
         if (reviewRepository.existsByUserIdAndProductId(user.getId(), product.getId())) {
             throw new IllegalArgumentException("Bạn đã đánh giá sản phẩm này rồi.");
@@ -36,23 +40,52 @@ public class ReviewService {
                 .product(product)
                 .rating(rating)
                 .comment(comment)
+                .images(images != null ? images : new ArrayList<>())
+                .variantName(variantName)
                 .isActive(true)
                 .build();
-        return reviewRepository.save(review);
+        Review saved = reviewRepository.save(review);
+        updateProductRatingMetrics(product.getId());
+        return saved;
     }
     
     public List<Review> getProductReviews(Long productId) {
         return reviewRepository.findByProductIdAndIsActiveTrue(productId);
     }
 
-    public List<Review> getAllReviews() {
-        return reviewRepository.findAll();
+    public Page<Review> getFilteredProductReviews(Long productId, Integer stars, Boolean hasImage, Pageable pageable) {
+        return reviewRepository.findProductReviewsWithFilters(productId, stars, hasImage, pageable);
+    }
+
+    public Page<Review> getAllReviews(Pageable pageable) {
+        return reviewRepository.findAll(pageable);
     }
 
     public Review toggleReviewStatus(Long reviewId, Boolean isActive) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new com.accessories.shop.backend.exception.ResourceNotFoundException("Đánh giá không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Đánh giá không tồn tại"));
         review.setIsActive(isActive);
+        Review saved = reviewRepository.save(review);
+        updateProductRatingMetrics(review.getProduct().getId());
+        return saved;
+    }
+
+    public Review replyToReview(Long reviewId, String reply) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResourceNotFoundException("Đánh giá không tồn tại"));
+        review.setAdminReply(reply);
         return reviewRepository.save(review);
+    }
+
+    private void updateProductRatingMetrics(Long productId) {
+        Double avgRating = reviewRepository.getAverageRatingByProductId(productId);
+        Integer totalReviews = reviewRepository.getTotalReviewsByProductId(productId);
+        
+        Product product = productRepository.findById(productId).orElse(null);
+        if (product != null) {
+            product.setAverageRating(avgRating != null ? avgRating : 0.0);
+            product.setTotalReviews(totalReviews != null ? totalReviews : 0);
+            productRepository.save(product);
+        }
     }
 }

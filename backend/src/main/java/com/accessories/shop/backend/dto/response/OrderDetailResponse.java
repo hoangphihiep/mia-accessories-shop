@@ -11,4 +11,5 @@ public class OrderDetailResponse {
     private ProductVariantResponse productVariant;
     private Integer quantity;
     private BigDecimal price;
+    private BigDecimal unitCost;
 }

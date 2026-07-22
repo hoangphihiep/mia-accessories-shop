@@ -33,6 +33,7 @@ public class MaterialService {
         Material material = getMaterialById(id);
         material.setName(materialDetails.getName());
         material.setSlug(materialDetails.getSlug());
+        material.setCareInstructions(materialDetails.getCareInstructions());
         return materialRepository.save(material);
     }
 

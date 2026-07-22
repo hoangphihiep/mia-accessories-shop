@@ -51,6 +51,18 @@ public class Product {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
+    @Column(name = "is_featured", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isFeatured;
+
+    @Column(name = "is_new", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isNew;
+
+    @Column(name = "average_rating", columnDefinition = "DOUBLE DEFAULT 0.0")
+    private Double averageRating;
+
+    @Column(name = "total_reviews", columnDefinition = "INT DEFAULT 0")
+    private Integer totalReviews;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, columnDefinition = "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6)")
     private LocalDateTime createdAt;
@@ -72,6 +84,6 @@ public class Product {
     private Set<ProductVariant> variants;
 
     // Một sản phẩm có nhiều Ảnh (Images)
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<ProductImage> images;
 }

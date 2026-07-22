@@ -23,6 +23,9 @@ public class Material {
     @Column(nullable = false, unique = true, length = 100)
     private String slug;
 
+    @Column(name = "care_instructions", columnDefinition = "TEXT")
+    private String careInstructions;
+
     @OneToMany(mappedBy = "material", fetch = FetchType.LAZY)
     private List<Product> products;
 }

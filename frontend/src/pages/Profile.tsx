@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useProfile, useUpdateProfile, useAddresses, useAddAddress, useMyOrders } from '../hooks/useProfile';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function Profile() {
   const { isAuthenticated, logout } = useAuth();
@@ -10,6 +11,7 @@ export default function Profile() {
   const { data: orders = [] } = useMyOrders();
   const { mutateAsync: updateProfile } = useUpdateProfile();
   const { mutateAsync: addAddress } = useAddAddress();
+  const { showToast } = useToast();
 
   const [editProfile, setEditProfile] = useState({ fullName: '', phone: '', address: '' });
   const [newAddress, setNewAddress] = useState({ street: '', city: '', phone: '', isDefault: false });
@@ -34,9 +36,9 @@ export default function Profile() {
     e.preventDefault();
     try {
       await updateProfile(editProfile);
-      alert('Cập nhật hồ sơ thành công!');
+      showToast('Cập nhật hồ sơ thành công!', 'success');
     } catch (err) {
-      alert('Lỗi cập nhật hồ sơ');
+      showToast('Lỗi cập nhật hồ sơ', 'error');
     }
   };
 
@@ -45,9 +47,9 @@ export default function Profile() {
     try {
       await addAddress(newAddress);
       setNewAddress({ street: '', city: '', phone: '', isDefault: false });
-      alert('Thêm địa chỉ thành công!');
+      showToast('Thêm địa chỉ thành công!', 'success');
     } catch (err) {
-      alert('Lỗi thêm địa chỉ');
+      showToast('Lỗi thêm địa chỉ', 'error');
     }
   };
 

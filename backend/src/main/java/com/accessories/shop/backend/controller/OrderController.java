@@ -8,6 +8,7 @@ import com.accessories.shop.backend.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,7 +28,7 @@ public class OrderController {
     }
 
     @GetMapping("/my-orders")
-    public ResponseEntity<List<OrderResponse>> getMyOrders(org.springframework.security.core.Authentication authentication) {
+    public ResponseEntity<List<OrderResponse>> getMyOrders(Authentication authentication) {
         String email = authentication.getName();
         List<OrderResponse> responses = orderService.getUserOrders(email).stream()
                 .map(orderMapper::toResponse)
