@@ -41,6 +41,15 @@ public class User implements UserDetails {
     @Column(columnDefinition = "TEXT")
     private String address;
 
+    @Column(length = 10)
+    private String gender;
+
+    @Column
+    private java.time.LocalDate dob;
+
+    @Column
+    private String avatar;
+
     // Nối sang bảng Role để biết ông này là Khách hay Admin
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
@@ -49,6 +58,20 @@ public class User implements UserDetails {
     // Dùng để khóa tài khoản nhân viên nghỉ việc hoặc khách spam
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
+
+    @Column(name = "failed_login_attempts", nullable = false)
+    @Builder.Default
+    private Integer failedLoginAttempts = 0;
+
+    @Column(name = "lockout_time")
+    private LocalDateTime lockoutTime;
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
+    @Column(name = "is_email_verified", nullable = false)
+    @Builder.Default
+    private Boolean isEmailVerified = false;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -76,7 +99,10 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        if (lockoutTime == null) {
+            return true;
+        }
+        return LocalDateTime.now().isAfter(lockoutTime);
     }
 
     @Override
@@ -86,6 +112,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isActive != null && isActive; // Chỉ cho phép đăng nhập nếu tài khoản đang Active
+        return isActive != null && isActive && isEmailVerified != null && isEmailVerified;
     }
 }

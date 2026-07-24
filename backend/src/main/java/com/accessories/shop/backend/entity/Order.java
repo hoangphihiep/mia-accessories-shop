@@ -48,6 +48,9 @@ public class Order {
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "shipping_fee", nullable = false, precision = 12, scale = 2)
+    private BigDecimal shippingFee = BigDecimal.ZERO;
+
     // COD (Tiền mặt) hoặc VNPAY
     @Column(name = "payment_method", nullable = false, length = 50)
     private String paymentMethod;

@@ -1,21 +1,29 @@
 package com.accessories.shop.backend.service;
 
+import com.accessories.shop.backend.dto.request.ProductVariantRequest;
 import com.accessories.shop.backend.entity.Category;
 import com.accessories.shop.backend.entity.Material;
 import com.accessories.shop.backend.entity.Product;
+import com.accessories.shop.backend.entity.ProductImage;
+import com.accessories.shop.backend.entity.ProductVariant;
 import com.accessories.shop.backend.exception.ResourceNotFoundException;
 import com.accessories.shop.backend.repository.CategoryRepository;
 import com.accessories.shop.backend.repository.MaterialRepository;
 import com.accessories.shop.backend.repository.ProductRepository;
+import com.accessories.shop.backend.specification.ProductSpecification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.stereotype.Service;
 import org.springframework.data.jpa.domain.Specification;
-import com.accessories.shop.backend.specification.ProductSpecification;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 import java.text.Normalizer;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Service
@@ -27,11 +35,12 @@ public class ProductService {
     private final MaterialRepository materialRepository;
 
     @Cacheable(value = "products")
-    public Page<Product> getAllProducts(String search, String category, Double minPrice, Double maxPrice, Pageable pageable) {
+    public Page<Product> getAllProducts(String search, String category, Double minPrice, Double maxPrice, Boolean isFeatured, Pageable pageable) {
         Specification<Product> spec = Specification.where(ProductSpecification.isActive())
                 .and(ProductSpecification.hasSearchKeyword(search))
                 .and(ProductSpecification.hasCategory(category))
-                .and(ProductSpecification.hasPriceBetween(minPrice, maxPrice));
+                .and(ProductSpecification.hasPriceBetween(minPrice, maxPrice))
+                .and(ProductSpecification.hasIsFeatured(isFeatured));
                 
         return productRepository.findAll(spec, pageable);
     }
@@ -42,7 +51,7 @@ public class ProductService {
     }
 
     @CacheEvict(value = "products", allEntries = true)
-    public Product createProduct(Product product, Long categoryId, Long materialId, java.util.List<com.accessories.shop.backend.dto.request.ProductVariantRequest> variantRequests, java.util.List<String> images) {
+    public Product createProduct(Product product, Long categoryId, Long materialId, List<ProductVariantRequest> variantRequests, List<String> images) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thể loại với ID: " + categoryId));
         Material material = materialRepository.findById(materialId)
@@ -64,9 +73,9 @@ public class ProductService {
         Product savedProduct = productRepository.save(product);
 
         if (variantRequests != null && !variantRequests.isEmpty()) {
-            java.util.Set<com.accessories.shop.backend.entity.ProductVariant> variants = new java.util.HashSet<>();
-            for (com.accessories.shop.backend.dto.request.ProductVariantRequest vReq : variantRequests) {
-                com.accessories.shop.backend.entity.ProductVariant variant = com.accessories.shop.backend.entity.ProductVariant.builder()
+            Set<ProductVariant> variants = new HashSet<>();
+            for (ProductVariantRequest vReq : variantRequests) {
+                ProductVariant variant = ProductVariant.builder()
                         .product(savedProduct)
                         .name(vReq.getName())
                         .sku(vReq.getSku())
@@ -74,7 +83,7 @@ public class ProductService {
                         .compareAtPrice(vReq.getCompareAtPrice())
                         .imageUrl(vReq.getImageUrl())
                         .stockQuantity(0) // Luôn luôn bằng 0 khi tạo mới
-                        .costPrice(java.math.BigDecimal.ZERO) // Giá vốn bằng 0
+                        .costPrice(BigDecimal.ZERO) // Giá vốn bằng 0
                         .isActive(true)
                         .build();
                 variants.add(variant);
@@ -83,11 +92,11 @@ public class ProductService {
         }
 
         if (images != null && !images.isEmpty()) {
-            java.util.Set<com.accessories.shop.backend.entity.ProductImage> productImages = new java.util.HashSet<>();
+            Set<ProductImage> productImages = new HashSet<>();
             for (int i = 0; i < images.size(); i++) {
                 String imgUrl = images.get(i);
                 if (imgUrl != null && !imgUrl.trim().isEmpty()) {
-                    com.accessories.shop.backend.entity.ProductImage img = com.accessories.shop.backend.entity.ProductImage.builder()
+                    ProductImage img = ProductImage.builder()
                             .product(savedProduct)
                             .imageUrl(imgUrl)
                             .isPrimary(i == 0) // First image is primary
@@ -102,7 +111,7 @@ public class ProductService {
     }
 
     @CacheEvict(value = "products", allEntries = true)
-    public Product updateProduct(Long id, Product productDetails, Long categoryId, Long materialId, java.util.List<com.accessories.shop.backend.dto.request.ProductVariantRequest> variantRequests, java.util.List<String> images) {
+    public Product updateProduct(Long id, Product productDetails, Long categoryId, Long materialId, List<ProductVariantRequest> variantRequests, List<String> images) {
         Product product = getProductById(id);
 
         Category category = categoryRepository.findById(categoryId)
@@ -124,16 +133,16 @@ public class ProductService {
         product.setMaterial(material);
 
         if (variantRequests != null) {
-            java.util.Set<com.accessories.shop.backend.entity.ProductVariant> existingVariants = product.getVariants();
+            Set<ProductVariant> existingVariants = product.getVariants();
             if (existingVariants == null) {
-                existingVariants = new java.util.HashSet<>();
+                existingVariants = new HashSet<>();
                 product.setVariants(existingVariants);
             }
 
             // Đánh dấu id của các variant gửi lên
-            java.util.Set<Long> requestVariantIds = new java.util.HashSet<>();
+            Set<Long> requestVariantIds = new HashSet<>();
             
-            for (com.accessories.shop.backend.dto.request.ProductVariantRequest vReq : variantRequests) {
+            for (ProductVariantRequest vReq : variantRequests) {
                 if (vReq.getId() != null) {
                     requestVariantIds.add(vReq.getId());
                     // Cập nhật variant cũ
@@ -151,7 +160,7 @@ public class ProductService {
                             });
                 } else {
                     // Tạo variant mới
-                    com.accessories.shop.backend.entity.ProductVariant newVariant = com.accessories.shop.backend.entity.ProductVariant.builder()
+                    ProductVariant newVariant = ProductVariant.builder()
                             .product(product)
                             .name(vReq.getName())
                             .sku(vReq.getSku())
@@ -159,7 +168,7 @@ public class ProductService {
                             .compareAtPrice(vReq.getCompareAtPrice())
                             .imageUrl(vReq.getImageUrl())
                             .stockQuantity(0)
-                            .costPrice(java.math.BigDecimal.ZERO)
+                            .costPrice(BigDecimal.ZERO)
                             .isActive(true)
                             .build();
                     existingVariants.add(newVariant);
@@ -167,7 +176,7 @@ public class ProductService {
             }
 
             // Xóa mềm các variant không có trong danh sách gửi lên
-            for (com.accessories.shop.backend.entity.ProductVariant existingVariant : existingVariants) {
+            for (ProductVariant existingVariant : existingVariants) {
                 if (existingVariant.getId() != null && !requestVariantIds.contains(existingVariant.getId())) {
                     existingVariant.setIsActive(false);
                 }
@@ -175,16 +184,16 @@ public class ProductService {
         }
 
         if (images != null) {
-            java.util.Set<com.accessories.shop.backend.entity.ProductImage> existingImages = product.getImages();
+            Set<ProductImage> existingImages = product.getImages();
             if (existingImages == null) {
-                existingImages = new java.util.HashSet<>();
+                existingImages = new HashSet<>();
                 product.setImages(existingImages);
             }
             existingImages.clear(); // Requires orphanRemoval = true in Product entity
             for (int i = 0; i < images.size(); i++) {
                 String imgUrl = images.get(i);
                 if (imgUrl != null && !imgUrl.trim().isEmpty()) {
-                    com.accessories.shop.backend.entity.ProductImage img = com.accessories.shop.backend.entity.ProductImage.builder()
+                    ProductImage img = ProductImage.builder()
                             .product(product)
                             .imageUrl(imgUrl)
                             .isPrimary(i == 0)

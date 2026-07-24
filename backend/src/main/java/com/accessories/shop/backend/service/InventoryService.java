@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ public class InventoryService {
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public InventoryReceipt createReceipt(InventoryReceiptRequest request) {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(currentUserEmail)

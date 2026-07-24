@@ -13,5 +13,6 @@ public class OrderRequest {
     private String customerPhone;
     private String shippingAddress;
     private String paymentMethod; // VD: "COD" hoặc "VNPAY"
+    private java.math.BigDecimal shippingFee;
     private List<OrderItemRequest> items; // Danh sách các món hàng
 }

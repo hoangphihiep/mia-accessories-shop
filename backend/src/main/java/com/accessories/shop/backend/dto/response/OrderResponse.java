@@ -18,6 +18,7 @@ public class OrderResponse {
     private String shippingAddress;
     private String status;
     private BigDecimal totalAmount;
+    private BigDecimal shippingFee;
     private String paymentMethod;
     private Boolean isPaid;
     private LocalDateTime createdAt;

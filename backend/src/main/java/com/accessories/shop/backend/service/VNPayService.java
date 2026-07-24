@@ -14,8 +14,8 @@ public class VNPayService {
     // Lưu ý: Đưa các biến này vào .env trong thực tế
     private static final String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     private static final String vnp_ReturnUrl = "http://localhost:5173/payment-result";
-    private static final String vnp_TmnCode = "YOUR_TMN_CODE"; // Thay bằng TMN CODE của bạn
-    private static final String secretKey = "YOUR_SECRET_KEY"; // Thay bằng Secret Key của bạn
+    private static final String vnp_TmnCode = "RT7TU5RL";
+    private static final String secretKey = "3GBUT8B5Y8VTFB2M0JX50G54TUQC52IT";
 
     public String createPaymentUrl(Long orderId, long amount, String bankCode, String ipAddress) {
         String vnp_Version = "2.1.0";
@@ -77,7 +77,38 @@ public class VNPayService {
         return vnp_PayUrl + "?" + queryUrl;
     }
 
-    private String hmacSHA512(final String key, final String data) {
+    public boolean verifySignature(Map<String, String> params) {
+        String vnp_SecureHash = params.get("vnp_SecureHash");
+        if (vnp_SecureHash == null) return false;
+
+        params.remove("vnp_SecureHashType");
+        params.remove("vnp_SecureHash");
+
+        List<String> fieldNames = new ArrayList<>(params.keySet());
+        Collections.sort(fieldNames);
+        StringBuilder hashData = new StringBuilder();
+        try {
+            Iterator<String> itr = fieldNames.iterator();
+            while (itr.hasNext()) {
+                String fieldName = itr.next();
+                String fieldValue = params.get(fieldName);
+                if ((fieldValue != null) && (fieldValue.length() > 0)) {
+                    hashData.append(fieldName).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+                    if (itr.hasNext()) {
+                        hashData.append('&');
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        String signValue = hmacSHA512(secretKey, hashData.toString());
+        return signValue.equals(vnp_SecureHash);
+    }
+
+    public String hmacSHA512(final String key, final String data) {
         try {
             if (key == null || data == null) return "";
             Mac hmac512 = Mac.getInstance("HmacSHA512");

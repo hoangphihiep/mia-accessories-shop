@@ -29,9 +29,69 @@ public class AddressService {
                 oldDefault.setIsDefault(false);
                 addressRepository.save(oldDefault);
             });
+        } else if (addressRepository.findByUserId(user.getId()).isEmpty()) {
+            // Nếu đây là địa chỉ đầu tiên, tự động set mặc định
+            addressRequest.setIsDefault(true);
         }
 
         addressRequest.setUser(user);
         return addressRepository.save(addressRequest);
+    }
+
+    public void deleteAddress(String email, Long addressId) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+        
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(() -> new ResourceNotFoundException("Địa chỉ không tồn tại"));
+
+        if (!address.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Bạn không có quyền xóa địa chỉ này");
+        }
+
+        boolean wasDefault = address.getIsDefault() != null && address.getIsDefault();
+        addressRepository.delete(address);
+
+        if (wasDefault) {
+            // Gán địa chỉ mặc định cho một địa chỉ khác (nếu còn)
+            List<Address> remaining = addressRepository.findByUserId(user.getId());
+            if (!remaining.isEmpty()) {
+                Address newDefault = remaining.get(0);
+                newDefault.setIsDefault(true);
+                addressRepository.save(newDefault);
+            }
+        }
+    }
+
+    public Address updateAddress(String email, Long addressId, Address addressRequest) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+        
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(() -> new ResourceNotFoundException("Địa chỉ không tồn tại"));
+
+        if (!address.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Bạn không có quyền sửa địa chỉ này");
+        }
+
+        // Nếu cập nhật thành mặc định, bỏ mặc định của các địa chỉ khác
+        if (addressRequest.getIsDefault() != null && addressRequest.getIsDefault() && (address.getIsDefault() == null || !address.getIsDefault())) {
+            addressRepository.findByUserIdAndIsDefaultTrue(user.getId()).ifPresent(oldDefault -> {
+                oldDefault.setIsDefault(false);
+                addressRepository.save(oldDefault);
+            });
+        }
+        
+        // Cập nhật các trường
+        address.setReceiverName(addressRequest.getReceiverName());
+        address.setPhone(addressRequest.getPhone());
+        address.setStreetAddress(addressRequest.getStreetAddress());
+        address.setCity(addressRequest.getCity());
+        address.setDistrict(addressRequest.getDistrict());
+        address.setWard(addressRequest.getWard());
+        
+        if (addressRequest.getIsDefault() != null) {
+            address.setIsDefault(addressRequest.getIsDefault());
+        }
+
+        return addressRepository.save(address);
     }
 }

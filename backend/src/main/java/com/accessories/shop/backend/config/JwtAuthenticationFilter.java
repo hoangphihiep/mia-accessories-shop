@@ -1,6 +1,7 @@
 package com.accessories.shop.backend.config;
 
 import com.accessories.shop.backend.service.JwtService;
+import com.accessories.shop.backend.repository.InvalidatedTokenRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final InvalidatedTokenRepository invalidatedTokenRepository;
 
     @Override
     protected void doFilterInternal(
@@ -43,6 +45,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // Cắt bỏ chữ "Bearer " để lấy đúng mã token
         jwt = authHeader.substring(7);
+
+        // Kiểm tra xem token có trong blacklist không
+        if (invalidatedTokenRepository.existsByToken(jwt)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         userEmail = jwtService.extractUsername(jwt);
 
         // Nếu có Email trong token và người dùng chưa được xác thực trong phiên này

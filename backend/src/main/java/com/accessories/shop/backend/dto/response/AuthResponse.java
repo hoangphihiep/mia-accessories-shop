@@ -9,5 +9,6 @@ import lombok.*;
 @Builder
 public class AuthResponse {
     private String token;      // Mã chuỗi JWT
+    private String refreshToken; // Mã refresh token
     private UserResponse user; // Thông tin user đầy đủ
 }

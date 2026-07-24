@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Package, Star, ArrowDownToLine, LogOut, Users, Tags, Building2, Layers, ChevronDown, Menu } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, Star, ArrowDownToLine, LogOut, Users, Tags, Building2, Layers, ChevronDown, Menu, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useState, useRef, useEffect } from 'react';
 
@@ -43,8 +43,10 @@ export default function AdminLayout() {
     navigation.splice(1, 0, { name: 'Nhân sự', href: '/admin/users', icon: Users });
     navigation.splice(2, 0, { name: 'Khách hàng', href: '/admin/customers', icon: Users });
     navigation.splice(5, 0, { name: 'Danh mục', href: '/admin/categories', icon: Tags });
-    navigation.splice(6, 0, { name: 'Chất liệu', href: '/admin/materials', icon: Layers });
+    navigation.splice(6, 0, { name: 'Bộ sưu tập', href: '/admin/collections', icon: Layers });
+    navigation.splice(7, 0, { name: 'Chất liệu', href: '/admin/materials', icon: Layers });
     navigation.splice(8, 0, { name: 'Nhà cung cấp', href: '/admin/suppliers', icon: Building2 });
+    navigation.push({ name: 'Cấu hình', href: '/admin/settings', icon: Settings });
   }
 
   return (

@@ -40,6 +40,7 @@ public class SecurityConfig {
                             "/api/v1/products", "/api/v1/products/**", 
                             "/api/v1/materials", "/api/v1/materials/**", 
                             "/api/v1/variants", "/api/v1/variants/**", 
+                            "/api/v1/settings", "/api/v1/settings/**", 
                             "/api/v1/reviews", "/api/v1/reviews/**").permitAll()
                         // Cho phép tra cứu đơn hàng không cần đăng nhập
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/track").permitAll()

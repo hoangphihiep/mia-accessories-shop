@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import com.accessories.shop.backend.exception.ResourceNotFoundException;
 import com.accessories.shop.backend.exception.BadRequestException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -27,9 +28,11 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductVariantRepository productVariantRepository;
     private final UserRepository userRepository;
+    private final com.accessories.shop.backend.repository.SiteSettingRepository siteSettingRepository;
 
     // Dùng @Transactional để lỡ đang lưu đơn hàng mà bị lỗi thì nó hoàn tác (rollback) lại toàn bộ, không bị trừ hụt kho
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public Order placeOrder(OrderRequest request) {
         // 1. Lấy Email của người đang đăng nhập từ Security Context
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -77,13 +80,30 @@ public class OrderService {
             order.getOrderDetails().add(orderDetail);
         }
 
-        order.setTotalAmount(totalAmount);
+        BigDecimal defaultShippingFee = siteSettingRepository.findById("SHIPPING_FEE_DEFAULT")
+                .map(s -> new BigDecimal(s.getSettingValue()))
+                .orElse(BigDecimal.valueOf(30000));
+                
+        BigDecimal freeShippingThreshold = siteSettingRepository.findById("FREE_SHIPPING_THRESHOLD")
+                .map(s -> new BigDecimal(s.getSettingValue()))
+                .orElse(BigDecimal.valueOf(500000));
+
+        BigDecimal shippingFee;
+        if (totalAmount.compareTo(freeShippingThreshold) >= 0) {
+            shippingFee = BigDecimal.ZERO;
+        } else {
+            shippingFee = defaultShippingFee;
+        }
+
+        order.setShippingFee(shippingFee);
+        order.setTotalAmount(totalAmount.add(shippingFee));
 
         // 4. Lưu đơn hàng (CascadeType.ALL sẽ tự động lưu luôn các OrderDetail bên trong)
         return orderRepository.save(order);
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public Order placePosOrder(OrderRequest request) {
         // POS order can be made by Staff or Admin
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -136,6 +156,7 @@ public class OrderService {
             order.getOrderDetails().add(orderDetail);
         }
 
+        order.setShippingFee(BigDecimal.ZERO);
         order.setTotalAmount(totalAmount);
         return orderRepository.save(order);
     }
@@ -150,11 +171,36 @@ public class OrderService {
         return orderRepository.findByCustomerPhone(phone);
     }
 
+    @Transactional
+    public Order cancelOrder(String email, Long orderId) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Bạn không có quyền hủy đơn hàng này");
+        }
+
+        if (!"PENDING".equalsIgnoreCase(order.getStatus())) {
+            throw new BadRequestException("Chỉ có thể hủy đơn hàng ở trạng thái Chờ xác nhận");
+        }
+
+        order.setStatus("CANCELLED");
+
+        // Hoàn lại số lượng tồn kho (Nếu hệ thống có trừ tồn kho khi đặt)
+        // Vì hiện tại chưa thấy logic trừ tồn kho trong placeOrder nên tạm thời chỉ set Status
+        
+        return orderRepository.save(order);
+    }
+
     public List<Order> findAllOrders() {
         return orderRepository.findAll();
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public Order updateOrderStatus(Long orderId, String newStatus) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với ID: " + orderId));
@@ -186,5 +232,17 @@ public class OrderService {
 
         order.setStatus(newStatus);
         return orderRepository.save(order);
+    }
+
+    @Transactional
+    public void updatePaymentStatus(Long orderId, boolean isPaid) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với ID: " + orderId));
+        order.setIsPaid(isPaid);
+        if (isPaid && order.getStatus().equals("PENDING")) {
+            // Đã thanh toán thành công thì chuyển trạng thái đơn hàng sang Đã xác nhận (CONFIRMED)
+            order.setStatus("CONFIRMED");
+        }
+        orderRepository.save(order);
     }
 }

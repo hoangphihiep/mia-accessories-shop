@@ -13,6 +13,9 @@ public class UserResponse {
     private String fullName;
     private String phone;
     private String address;
+    private String gender;
+    private java.time.LocalDate dob;
+    private String avatar;
     private Boolean isActive;
     private LocalDateTime createdAt;
     private RoleResponse role;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, Minus, Plus, ShoppingCart, User, ChevronRight, Check } from 'lucide-react';
+import { Star, Minus, Plus, ShoppingCart, User, ChevronRight, Check, Zap } from 'lucide-react';
 import { useProduct } from '../hooks/useProducts';
 import { useProductReviews, useCreateReview } from '../hooks/useReviews';
 import { useCart } from '../context/CartContext';
@@ -23,7 +23,7 @@ export default function ProductDetail() {
   const { data: reviewsData } = useProductReviews(id as string);
   const { mutateAsync: submitReview, isPending: submittingReview } = useCreateReview();
 
-  const reviews = reviewsData || [];
+  const reviews = Array.isArray(reviewsData) ? reviewsData : (reviewsData?.content || []);
 
   useEffect(() => {
     if (product) {
@@ -52,6 +52,38 @@ export default function ProductDetail() {
 
   const fallbackImages = ['https://images.unsplash.com/photo-1605100804763-247f67b2548e?auto=format&fit=crop&q=80&w=800'];
   const images = product.images?.length > 0 ? product.images.map((img: any) => img.imageUrl) : fallbackImages;
+
+  const handleAction = (isBuyNow: boolean = false) => {
+    if (!isAuthenticated) {
+      showToast('Vui lòng đăng nhập để sử dụng giỏ hàng!', 'info');
+      navigate('/login');
+      return;
+    }
+    if (!selectedVariant) {
+      showToast('Vui lòng chọn mẫu sản phẩm', 'error');
+      return;
+    }
+    if (selectedVariant.stockQuantity < quantity) {
+      showToast('Sản phẩm không đủ số lượng trong kho', 'error');
+      return;
+    }
+    addToCart({
+      variantId: selectedVariant.id,
+      productId: product.id,
+      name: product.name,
+      price: selectedVariant.price,
+      quantity: quantity,
+      variantName: selectedVariant.name,
+      image: activeImage,
+      stockQuantity: selectedVariant.stockQuantity
+    });
+    
+    if (isBuyNow) {
+      navigate('/checkout');
+    } else {
+      showToast('Đã thêm vào giỏ hàng!', 'success');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-gray-900 selection:text-white pb-24">
@@ -201,42 +233,32 @@ export default function ProductDetail() {
                 </button>
               </div>
               
-              {/* Add Button */}
+              {/* Add to Cart Button */}
               <button 
-                onClick={() => {
-                  if (!isAuthenticated) {
-                    showToast('Vui lòng đăng nhập để sử dụng giỏ hàng!', 'info');
-                    navigate('/login');
-                    return;
-                  }
-                  if (!selectedVariant) {
-                    showToast('Vui lòng chọn mẫu sản phẩm', 'error');
-                    return;
-                  }
-                  if (selectedVariant.stockQuantity < quantity) {
-                    showToast('Sản phẩm không đủ số lượng trong kho', 'error');
-                    return;
-                  }
-                  addToCart({
-                    variantId: selectedVariant.id,
-                    productId: product.id,
-                    name: product.name,
-                    price: selectedVariant.price,
-                    quantity: quantity,
-                    variantName: selectedVariant.name,
-                    image: activeImage
-                  });
-                  showToast('Đã thêm vào giỏ hàng!', 'success');
-                }}
+                onClick={() => handleAction(false)}
                 disabled={selectedVariant?.stockQuantity === 0}
-                className={`flex-1 h-14 rounded-xl font-semibold flex items-center justify-center gap-3 transition-all duration-300 ${
+                className={`flex-1 h-14 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-300 ${
                   selectedVariant?.stockQuantity === 0 
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' 
-                    : 'bg-gray-900 text-white hover:bg-gray-800 hover:shadow-xl hover:-translate-y-0.5'
+                    ? 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-200' 
+                    : 'bg-white text-gray-900 border-2 border-gray-900 hover:bg-gray-50 hover:-translate-y-0.5 shadow-sm'
                 }`}
               >
                 <ShoppingCart size={20} />
-                <span>{selectedVariant?.stockQuantity === 0 ? 'Hết hàng' : 'Thêm vào giỏ hàng'}</span>
+                <span className="hidden sm:inline whitespace-nowrap">{selectedVariant?.stockQuantity === 0 ? 'Hết hàng' : 'Thêm vào giỏ'}</span>
+              </button>
+
+              {/* Buy Now Button */}
+              <button 
+                onClick={() => handleAction(true)}
+                disabled={selectedVariant?.stockQuantity === 0}
+                className={`flex-[2] sm:flex-1 h-14 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-300 ${
+                  selectedVariant?.stockQuantity === 0 
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' 
+                    : 'bg-gray-900 text-white hover:bg-gray-800 hover:-translate-y-0.5 shadow-md'
+                }`}
+              >
+                <Zap size={20} className={selectedVariant?.stockQuantity === 0 ? '' : 'text-yellow-400 fill-yellow-400'} />
+                <span className="whitespace-nowrap">Mua ngay</span>
               </button>
             </div>
 

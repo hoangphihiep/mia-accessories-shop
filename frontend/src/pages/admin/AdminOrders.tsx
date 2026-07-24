@@ -301,8 +301,13 @@ export default function AdminOrders() {
                       </div>
                       <div className="flex-1 flex flex-col justify-center">
                         <div className="font-bold text-gray-900 text-sm line-clamp-2">
-                          {item.productVariant?.name || 'Sản phẩm'}
+                          {item.productVariant?.productName || 'Sản phẩm'}
                         </div>
+                        {item.productVariant?.name && (
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            Phân loại: <span className="font-medium text-gray-700">{item.productVariant.name}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between items-center mt-2">
                           <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">x{item.quantity}</span>
                           <span className="font-black text-gray-900 text-sm">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</span>
@@ -393,7 +398,12 @@ export default function AdminOrders() {
               <tbody>
                 {selectedOrder.orderDetails?.map((item: any, idx: number) => (
                   <tr key={idx} className="border-b border-gray-100">
-                    <td className="py-3">{item.productVariant?.name || 'Sản phẩm'}</td>
+                    <td className="py-3">
+                      <div className="font-medium">{item.productVariant?.productName || 'Sản phẩm'}</div>
+                      {item.productVariant?.name && (
+                        <div className="text-xs text-gray-500 mt-0.5">{item.productVariant.name}</div>
+                      )}
+                    </td>
                     <td className="py-3 text-center">{item.quantity}</td>
                     <td className="py-3 text-right">{item.price.toLocaleString('vi-VN')}đ</td>
                     <td className="py-3 text-right font-medium">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</td>

@@ -7,21 +7,17 @@ export const useLogin = () => {
   const { login } = useAuth();
   
   return useMutation({
-    mutationFn: (data: LoginRequest) => AuthService.login(data),
-    onSuccess: (data) => {
-      login(data.token, data.user);
+    mutationFn: (data: LoginRequest & { rememberMe?: boolean }) => AuthService.login(data),
+    onSuccess: (data, variables) => {
+      login(data.token, data.refreshToken, data.user, variables.rememberMe);
     }
   });
 };
 
 export const useRegister = () => {
-  const { login } = useAuth();
-  
   return useMutation({
     mutationFn: (data: RegisterRequest) => AuthService.register(data),
-    onSuccess: (data) => {
-      login(data.token, data.user);
-    }
+    // Bỏ login() vì register giờ yêu cầu xác thực email trước
   });
 };
 

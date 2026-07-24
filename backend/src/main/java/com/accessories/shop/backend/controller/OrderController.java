@@ -43,4 +43,11 @@ public class OrderController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(responses);
     }
+
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<OrderResponse> cancelOrder(Authentication authentication, @PathVariable Long id) {
+        String email = authentication.getName();
+        Order order = orderService.cancelOrder(email, id);
+        return ResponseEntity.ok(orderMapper.toResponse(order));
+    }
 }

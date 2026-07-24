@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Getter
 @Setter
@@ -13,7 +14,10 @@ public class ProductResponse {
     private String slug;
     private String description;
     private Boolean isActive;
+    @JsonProperty("isFeatured")
     private Boolean isFeatured;
+    
+    @JsonProperty("isNew")
     private Boolean isNew;
     private Double averageRating;
     private Integer totalReviews;

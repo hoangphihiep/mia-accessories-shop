@@ -36,6 +36,42 @@ export const useAddAddress = () => {
   });
 };
 
+export const useDeleteAddress = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => UserService.deleteAddress(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['addresses'] });
+    }
+  });
+};
+
+export const useUpdateAddress = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number, data: any }) => UserService.updateAddress(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['addresses'] });
+    }
+  });
+};
+
+export const useChangePassword = () => {
+  return useMutation({
+    mutationFn: (data: any) => UserService.changePassword(data)
+  });
+};
+
+export const useCancelOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => OrderService.cancelOrder(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['myOrders'] });
+    }
+  });
+};
+
 export const useMyOrders = () => {
   return useQuery({
     queryKey: ['myOrders'],

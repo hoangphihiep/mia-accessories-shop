@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +31,7 @@ public class AddressController {
     }
 
     @PostMapping
-    public ResponseEntity<AddressResponse> addAddress(Authentication authentication, @RequestBody AddressRequest request) {
+    public ResponseEntity<AddressResponse> addAddress(Authentication authentication, @Valid @RequestBody AddressRequest request) {
         String email = authentication.getName();
         
         Address address = Address.builder()
@@ -45,5 +46,30 @@ public class AddressController {
                 
         Address savedAddress = addressService.addAddress(email, address);
         return ResponseEntity.ok(addressMapper.toResponse(savedAddress));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteAddress(Authentication authentication, @PathVariable Long id) {
+        String email = authentication.getName();
+        addressService.deleteAddress(email, id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<AddressResponse> updateAddress(Authentication authentication, @PathVariable Long id, @Valid @RequestBody AddressRequest request) {
+        String email = authentication.getName();
+        
+        Address address = Address.builder()
+                .receiverName(request.getReceiverName())
+                .phone(request.getPhone())
+                .streetAddress(request.getStreetAddress())
+                .city(request.getCity())
+                .district(request.getDistrict())
+                .ward(request.getWard())
+                .isDefault(request.getIsDefault())
+                .build();
+                
+        Address updatedAddress = addressService.updateAddress(email, id, address);
+        return ResponseEntity.ok(addressMapper.toResponse(updatedAddress));
     }
 }

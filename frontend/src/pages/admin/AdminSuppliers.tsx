@@ -375,7 +375,7 @@ export default function AdminSuppliers() {
                   </label>
                   <input 
                     type="tel" 
-                    pattern="^(0[3|5|7|8|9])+([0-9]{8})$"
+                    pattern="^(0[35789])([0-9]{8})$"
                     title="Số điện thoại phải có 10 chữ số và bắt đầu bằng đầu số hợp lệ (VD: 09, 03...)"
                     value={formData.phone}
                     onChange={e => setFormData({...formData, phone: e.target.value})}
@@ -433,7 +433,7 @@ export default function AdminSuppliers() {
                         </div>
                         <div className="flex justify-between text-xs text-gray-500">
                           <span>{formatDate(rec.createdAt)}</span>
-                          <span>Người nhập: {rec.createdBy}</span>
+                          <span>Người nhập: {typeof rec.createdBy === 'object' ? rec.createdBy?.fullName : rec.createdBy}</span>
                         </div>
                       </div>
                     </div>
@@ -465,7 +465,7 @@ export default function AdminSuppliers() {
                         {pay.note && <p className="text-sm text-gray-600 mb-2 bg-gray-50 p-2 rounded-lg">{pay.note}</p>}
                         <div className="flex justify-between text-xs text-gray-500">
                           <span>{formatDate(pay.createdAt)}</span>
-                          <span>Người trả: {pay.createdBy}</span>
+                          <span>Người trả: {typeof pay.createdBy === 'object' ? pay.createdBy?.fullName : pay.createdBy}</span>
                         </div>
                       </div>
                     </div>

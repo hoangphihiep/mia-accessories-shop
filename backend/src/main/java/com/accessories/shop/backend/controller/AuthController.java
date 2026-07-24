@@ -6,6 +6,7 @@ import com.accessories.shop.backend.dto.request.LoginRequest;
 import com.accessories.shop.backend.dto.request.RegisterRequest;
 import com.accessories.shop.backend.dto.request.ForgotPasswordRequest;
 import com.accessories.shop.backend.dto.request.ResetPasswordRequest;
+import com.accessories.shop.backend.dto.request.RefreshTokenRequest;
 import com.accessories.shop.backend.exception.BadRequestException;
 import com.accessories.shop.backend.exception.ResourceNotFoundException;
 import com.accessories.shop.backend.service.AuthService;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -39,6 +41,24 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @GetMapping("/verify")
+    public ResponseEntity<MessageResponse> verifyEmail(@RequestParam("token") String token) {
+        authService.verifyEmail(token);
+        return ResponseEntity.ok(new MessageResponse("Xác thực email thành công! Bạn có thể đăng nhập ngay bây giờ."));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refreshToken(request.getToken()));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<MessageResponse> logout(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        authService.logout(authHeader);
+        return ResponseEntity.ok(new MessageResponse("Đăng xuất thành công."));
     }
 
     @PostMapping("/forgot-password")

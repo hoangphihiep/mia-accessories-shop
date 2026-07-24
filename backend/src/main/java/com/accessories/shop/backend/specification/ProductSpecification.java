@@ -49,4 +49,13 @@ public class ProductSpecification {
     public static Specification<Product> isActive() {
         return (root, query, criteriaBuilder) -> criteriaBuilder.isTrue(root.get("isActive"));
     }
+
+    public static Specification<Product> hasIsFeatured(Boolean isFeatured) {
+        return (root, query, criteriaBuilder) -> {
+            if (isFeatured == null) {
+                return null;
+            }
+            return criteriaBuilder.equal(root.get("isFeatured"), isFeatured);
+        };
+    }
 }

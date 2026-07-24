@@ -29,8 +29,9 @@ public class ProductController {
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) Boolean isFeatured,
             Pageable pageable) {
-        Page<Product> productPage = productService.getAllProducts(search, category, minPrice, maxPrice, pageable);
+        Page<Product> productPage = productService.getAllProducts(search, category, minPrice, maxPrice, isFeatured, pageable);
         return ResponseEntity.ok(productPage.map(productMapper::toResponse));
     }
 
