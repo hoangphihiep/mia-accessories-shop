@@ -1,5 +1,6 @@
 package com.accessories.shop.backend.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -11,11 +12,17 @@ import java.util.*;
 
 @Service
 public class VNPayService {
-    // Lưu ý: Đưa các biến này vào .env trong thực tế
-    private static final String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    private static final String vnp_ReturnUrl = "http://localhost:5173/payment-result";
-    private static final String vnp_TmnCode = "RT7TU5RL";
-    private static final String secretKey = "3GBUT8B5Y8VTFB2M0JX50G54TUQC52IT";
+    @Value("${vnpay.pay-url}")
+    private String vnp_PayUrl;
+
+    @Value("${vnpay.return-url}")
+    private String vnp_ReturnUrl;
+
+    @Value("${vnpay.tmn-code}")
+    private String vnp_TmnCode;
+
+    @Value("${vnpay.secret-key}")
+    private String secretKey;
 
     public String createPaymentUrl(Long orderId, long amount, String bankCode, String ipAddress) {
         String vnp_Version = "2.1.0";

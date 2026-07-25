@@ -50,6 +50,16 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm với ID: " + id));
     }
 
+    public Product getProductBySlug(String slug) {
+        Product product = productRepository.findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không tồn tại"));
+                
+        if (product.getIsActive() == null || !product.getIsActive()) {
+            throw new ResourceNotFoundException("Sản phẩm không còn tồn tại hoặc đã bị ẩn");
+        }
+        return product;
+    }
+
     @CacheEvict(value = "products", allEntries = true)
     public Product createProduct(Product product, Long categoryId, Long materialId, List<ProductVariantRequest> variantRequests, List<String> images) {
         Category category = categoryRepository.findById(categoryId)

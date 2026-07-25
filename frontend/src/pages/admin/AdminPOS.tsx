@@ -122,7 +122,7 @@ export default function AdminPOS() {
     return products
       .filter(p => selectedCategory === 'all' || p.category.id.toString() === selectedCategory)
       .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.description?.toLowerCase().includes(searchTerm.toLowerCase()))
-      .flatMap(p => p.variants.map((v: any) => ({ ...v, productName: p.name, productImage: p.images?.[0]?.imageUrl })));
+      .flatMap(p => p.variants.map((v: any) => ({ ...v, productName: p.name, productImage: v.imageUrl || p.images?.[0]?.imageUrl })));
   }, [products, searchTerm, selectedCategory]);
 
   const addToCart = (variant: any) => {
@@ -251,6 +251,22 @@ export default function AdminPOS() {
       };
       const response = await api.post('/admin/orders/pos', payload);
       
+      // Nếu là chuyển khoản (TRANSFER), gọi API tạo link VNPay và mở tab mới để lấy mã QR
+      if (paymentMethod === 'TRANSFER') {
+        try {
+          const paymentResponse = await api.post('/payments/create-vnpay', {
+            orderId: response.data.id,
+            amount: response.data.totalAmount,
+            bankCode: ''
+          });
+          // Mở cổng thanh toán VNPay ở tab mới để thu ngân/khách hàng quét mã
+          window.open(paymentResponse.data.paymentUrl, '_blank');
+        } catch (vnpayError) {
+          console.error("Lỗi tạo link VNPay:", vnpayError);
+          showToast('Không thể tạo mã QR VNPay, vui lòng kiểm tra lại.', 'error');
+        }
+      }
+
       // Save order for receipt with Server Data
       setLastOrder({
         id: response.data.id,
@@ -637,7 +653,7 @@ export default function AdminPOS() {
                         <span className="font-bold text-primary">• {new Intl.NumberFormat('vi-VN').format(order.cart.reduce((a: any, b: any) => a + b.price * b.quantity, 0))}đ</span>
                       </div>
                     </div>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-2">
                       <button onClick={() => handleRestoreOrder(order.id)} className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-amber-200">
                         Phục hồi
                       </button>

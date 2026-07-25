@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Star, Minus, Plus, ShoppingCart, User, ChevronRight, Check, Zap } from 'lucide-react';
-import { useProduct } from '../hooks/useProducts';
+import { useProductBySlug } from '../hooks/useProducts';
 import { useProductReviews, useCreateReview } from '../hooks/useReviews';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
 export default function ProductDetail() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { cartItems, addToCart } = useCart();
   const { isAuthenticated } = useAuth();
   const { showToast } = useToast();
   const [quantity, setQuantity] = useState(1);
@@ -19,8 +19,8 @@ export default function ProductDetail() {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
 
-  const { data: product, isLoading: loading } = useProduct(id as string);
-  const { data: reviewsData } = useProductReviews(id as string);
+  const { data: product, isLoading: loading } = useProductBySlug(slug as string);
+  const { data: reviewsData } = useProductReviews(product?.id?.toString() || '');
   const { mutateAsync: submitReview, isPending: submittingReview } = useCreateReview();
 
   const reviews = Array.isArray(reviewsData) ? reviewsData : (reviewsData?.content || []);
@@ -63,8 +63,12 @@ export default function ProductDetail() {
       showToast('Vui lòng chọn mẫu sản phẩm', 'error');
       return;
     }
-    if (selectedVariant.stockQuantity < quantity) {
-      showToast('Sản phẩm không đủ số lượng trong kho', 'error');
+    
+    const existingCartItem = cartItems.find((item: any) => item.variantId === selectedVariant.id);
+    const currentQtyInCart = existingCartItem ? existingCartItem.quantity : 0;
+    
+    if (selectedVariant.stockQuantity < quantity + currentQtyInCart) {
+      showToast(`Kho chỉ còn ${selectedVariant.stockQuantity} sản phẩm (bạn đã có ${currentQtyInCart} trong giỏ)`, 'error');
       return;
     }
     addToCart({
@@ -344,7 +348,7 @@ export default function ProductDetail() {
                     e.preventDefault();
                     try {
                       await submitReview({
-                        productId: id as string,
+                        productId: product.id.toString(),
                         data: { rating, comment }
                       });
                       setComment('');

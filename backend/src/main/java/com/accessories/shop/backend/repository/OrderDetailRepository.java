@@ -25,4 +25,13 @@ public interface OrderDetailRepository extends JpaRepository<OrderDetail, Long> 
             @Param("startDate") LocalDateTime startDate, 
             @Param("endDate") LocalDateTime endDate, 
             Pageable pageable);
+
+    @Query("SELECT new map(od.productVariant.product.name as productName, SUM(od.quantity) as totalSold, SUM(od.price * od.quantity) as totalRevenue) " +
+           "FROM OrderDetail od WHERE od.order.status = 'COMPLETED' AND od.order.createdAt >= :startDate AND od.order.createdAt <= :endDate " +
+           "GROUP BY od.productVariant.product.id, od.productVariant.product.name " +
+           "ORDER BY SUM(od.price * od.quantity) DESC")
+    List<Map<String, Object>> findProductRevenue(
+            @Param("startDate") LocalDateTime startDate, 
+            @Param("endDate") LocalDateTime endDate, 
+            Pageable pageable);
 }

@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../hooks/useSettings';
+import { useProfile, useAddresses } from '../hooks/useProfile';
 
 const checkoutSchema = z.object({
   firstName: z.string().min(2, 'Tên quá ngắn'),
@@ -28,6 +29,8 @@ export default function Checkout() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const { showToast } = useToast();
   const { settings } = useSettings();
+  const { data: profile } = useProfile();
+  const { data: addresses } = useAddresses();
   const [loading, setLoading] = useState(false);
 
   const {
@@ -51,6 +54,34 @@ export default function Checkout() {
       navigate('/login');
     }
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (profile) {
+      setValue('email', profile.email || '');
+    }
+    
+    if (addresses && addresses.length > 0) {
+      const defaultAddr = addresses.find((a: any) => a.isDefault) || addresses[0];
+      if (defaultAddr) {
+        const nameParts = defaultAddr.receiverName?.trim().split(' ') || [];
+        const lastName = nameParts.length > 0 ? nameParts[0] : '';
+        const firstName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : (nameParts.length === 1 ? ' ' : '');
+        
+        setValue('lastName', lastName);
+        setValue('firstName', firstName);
+        setValue('phone', defaultAddr.phone || profile?.phone || '');
+        setValue('address', `${defaultAddr.streetAddress}, ${defaultAddr.ward}, ${defaultAddr.district}`);
+        setValue('city', defaultAddr.city || '');
+      }
+    } else if (profile) {
+       setValue('phone', profile.phone || '');
+       if (profile.fullName) {
+          const nameParts = profile.fullName.trim().split(' ');
+          setValue('lastName', nameParts.length > 0 ? nameParts[0] : '');
+          setValue('firstName', nameParts.length > 1 ? nameParts.slice(1).join(' ') : (nameParts.length === 1 ? ' ' : ''));
+       }
+    }
+  }, [profile, addresses, setValue]);
 
   if (!isAuthenticated) return null;
 
@@ -96,7 +127,7 @@ export default function Checkout() {
       } else {
         clearCart();
         showToast('Đặt hàng thành công!', 'success');
-        navigate('/payment-result?vnp_ResponseCode=00'); // Tái sử dụng trang PaymentResult cho mượt
+        navigate('/payment-result?method=COD'); // Tái sử dụng trang PaymentResult cho mượt
       }
     } catch (error: any) {
       console.error('Lỗi khi đặt hàng:', error);

@@ -12,6 +12,11 @@ export const ProductService = {
     return response.data;
   },
 
+  getProductBySlug: async (slug: string): Promise<ProductResponse> => {
+    const response = await api.get(`/products/slug/${slug}`);
+    return response.data;
+  },
+
   getFeaturedProducts: async (size: number = 4): Promise<PageResponse<ProductResponse>> => {
     const response = await api.get('/products', { params: { page: 0, size, isFeatured: true, sort: 'createdAt,desc' } });
     return response.data;

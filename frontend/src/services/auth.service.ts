@@ -25,5 +25,15 @@ export const AuthService = {
   verifyEmail: async (token: string): Promise<MessageResponse> => {
     const response = await api.get(`/auth/verify?token=${token}`);
     return response.data;
+  },
+
+  oauth2Google: async (token: string): Promise<AuthResponse> => {
+    const response = await api.post('/auth/oauth2/google', { token });
+    return response.data;
+  },
+
+  oauth2Facebook: async (token: string): Promise<AuthResponse> => {
+    const response = await api.post('/auth/oauth2/facebook', { token });
+    return response.data;
   }
 };

@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit, Trash2, X, AlertCircle, Package, LayoutGrid, List, Filter, Image as ImageIcon, UploadCloud, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Plus, Edit, Trash2, X, AlertCircle, Package, LayoutGrid, List, Image as ImageIcon, UploadCloud, Check } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 import api from '../../services/api';
+import { generateSlug } from '../../lib/utils';
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<any[]>([]);
@@ -72,15 +73,15 @@ export default function AdminProducts() {
 
     const uploadFormData = new FormData();
     uploadFormData.append('file', file);
-    
+
     setIsUploading(true);
     try {
       const response = await api.post('/upload/image', uploadFormData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
+
       const url = response.data.url;
-      
+
       if (isVariant && index !== undefined) {
         handleVariantChange(index, 'imageUrl', url);
       } else {
@@ -226,8 +227,8 @@ export default function AdminProducts() {
   if (loading) return <div className="p-12 text-center">Loading...</div>;
 
   return (
-    <div className="relative flex w-full h-[calc(100vh-6rem)] overflow-hidden">
-      <div className="flex-1 flex flex-col bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+    <>
+      <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 h-[calc(100vh-9rem)] flex flex-col overflow-hidden">
         <div className="p-8 border-b border-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/50 backdrop-blur-xl shrink-0 z-10 relative">
           <div>
             <h2 className="font-black uppercase tracking-widest text-xl text-gray-900">Danh mục Sản phẩm</h2>
@@ -339,7 +340,7 @@ export default function AdminProducts() {
                           {totalStock}
                         </span>
                       </td>
-                      <td className="p-4 md:p-5 pr-4 md:pr-8 text-right space-x-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      <td className="p-4 md:p-5 pr-4 md:pr-8 text-right space-x-2 whitespace-nowrap">
                         <button onClick={() => openEditDrawer(product)} className="p-2 text-sky-600 hover:bg-sky-50 rounded-lg transition-colors" title="Sửa">
                           <Edit size={18} />
                         </button>
@@ -454,7 +455,7 @@ export default function AdminProducts() {
 
       {/* Side Drawer */}
       <div
-        className={`fixed top-0 right-0 h-screen w-full lg:w-[600px] bg-white shadow-2xl border-l border-gray-100 z-50 transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${showDrawer ? 'translate-x-0' : 'translate-x-[110%]'
+        className={`fixed top-0 right-0 bottom-0 w-full lg:w-[600px] bg-white shadow-2xl border-l border-gray-100 z-50 transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${showDrawer ? 'translate-x-0' : 'translate-x-[110%]'
           }`}
       >
         <div className="h-20 border-b border-gray-100 flex items-center justify-between px-8 bg-white/50 backdrop-blur-xl shrink-0">
@@ -496,10 +497,10 @@ export default function AdminProducts() {
                 ))}
 
                 <label className={`w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 hover:border-primary flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-primary transition-colors shrink-0 bg-gray-50 hover:bg-sky-50 cursor-pointer ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
                     onChange={(e) => handleImageUpload(e)}
                     disabled={isUploading}
                   />
@@ -523,7 +524,14 @@ export default function AdminProducts() {
                     type="text"
                     required
                     value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    onChange={e => {
+                      const newName = e.target.value;
+                      setFormData({
+                        ...formData,
+                        name: newName,
+                        slug: drawerMode === 'create' ? generateSlug(newName) : formData.slug
+                      });
+                    }}
                     className="w-full bg-gray-50 border-none p-4 rounded-xl focus:ring-2 focus:ring-primary focus:bg-white transition-all text-sm font-medium"
                     placeholder="VD: Nhẫn Bát Nhã Tâm Kinh"
                   />
@@ -656,10 +664,10 @@ export default function AdminProducts() {
                           </div>
                         ) : (
                           <label className={`w-full h-24 rounded-xl border-2 border-dashed border-gray-300 hover:border-primary flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-primary transition-colors bg-gray-50 hover:bg-sky-50 cursor-pointer ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              className="hidden" 
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
                               onChange={(e) => handleImageUpload(e, true, index)}
                               disabled={isUploading}
                             />
@@ -767,6 +775,6 @@ export default function AdminProducts() {
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }

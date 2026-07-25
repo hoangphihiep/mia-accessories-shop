@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,7 +44,21 @@ type AddressFormValues = z.infer<typeof addressSchema>;
 
 export default function Profile() {
   const { isAuthenticated, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('info');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'info');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
+
   const { data: profile, isLoading: isProfileLoading } = useProfile();
   const { data: addresses = [] } = useAddresses();
   const { data: orders = [] } = useMyOrders();
@@ -180,10 +195,8 @@ export default function Profile() {
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
       case 'PENDING': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-      case 'PAID': return 'bg-green-50 text-green-700 border-green-200';
-      case 'PROCESSING': return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'SHIPPED': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-      case 'DELIVERED': return 'bg-teal-50 text-teal-700 border-teal-200';
+      case 'SHIPPING': return 'bg-sky-50 text-sky-700 border-sky-200';
+      case 'COMPLETED': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'CANCELLED': return 'bg-red-50 text-red-700 border-red-200';
       default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
@@ -192,10 +205,8 @@ export default function Profile() {
   const getStatusText = (status: string) => {
     switch (status.toUpperCase()) {
       case 'PENDING': return 'Chờ xác nhận';
-      case 'PAID': return 'Đã thanh toán';
-      case 'PROCESSING': return 'Đang xử lý';
-      case 'SHIPPED': return 'Đang giao hàng';
-      case 'DELIVERED': return 'Đã giao thành công';
+      case 'SHIPPING': return 'Đang giao hàng';
+      case 'COMPLETED': return 'Hoàn thành';
       case 'CANCELLED': return 'Đã hủy';
       default: return status;
     }
@@ -224,15 +235,15 @@ export default function Profile() {
                 </div>
               </div>
               <div>
-                <h2 className="font-bold text-gray-900 text-lg truncate max-w-[150px]">{profile?.fullName}</h2>
-                <p className="text-sm text-gray-500 truncate max-w-[150px]">{profile?.email}</p>
+                <h2 className="font-bold text-gray-900 text-lg truncate max-w-[150px]" title={profile?.fullName}>{profile?.fullName}</h2>
+                <p className="text-sm text-gray-500 truncate max-w-[150px]" title={profile?.email}>{profile?.email}</p>
               </div>
             </div>
 
             <ul className="space-y-2 font-medium">
               <li>
                 <button 
-                  onClick={() => setActiveTab('info')} 
+                  onClick={() => handleTabChange('info')} 
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === 'info' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
                 >
                   <User size={18} />
@@ -242,7 +253,7 @@ export default function Profile() {
               </li>
               <li>
                 <button 
-                  onClick={() => setActiveTab('address')} 
+                  onClick={() => handleTabChange('address')} 
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === 'address' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
                 >
                   <MapPin size={18} />
@@ -252,7 +263,7 @@ export default function Profile() {
               </li>
               <li>
                 <button 
-                  onClick={() => setActiveTab('orders')} 
+                  onClick={() => handleTabChange('orders')} 
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === 'orders' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
                 >
                   <Package size={18} />
@@ -262,7 +273,7 @@ export default function Profile() {
               </li>
               <li>
                 <button 
-                  onClick={() => setActiveTab('security')} 
+                  onClick={() => handleTabChange('security')} 
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === 'security' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
                 >
                   <ShieldCheck size={18} />
@@ -582,9 +593,8 @@ export default function Profile() {
                   {[
                     { id: 'ALL', label: 'Tất cả' },
                     { id: 'PENDING', label: 'Chờ xác nhận' },
-                    { id: 'PROCESSING', label: 'Đang xử lý' },
-                    { id: 'SHIPPED', label: 'Đang giao' },
-                    { id: 'DELIVERED', label: 'Thành công' },
+                    { id: 'SHIPPING', label: 'Đang giao' },
+                    { id: 'COMPLETED', label: 'Thành công' },
                     { id: 'CANCELLED', label: 'Đã hủy' }
                   ].map(tab => (
                     <button
@@ -627,9 +637,9 @@ export default function Profile() {
                           {order.orderDetails?.map((detail: any) => (
                             <div key={detail.id} className="flex items-center gap-4">
                               <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden flex items-center justify-center">
-                                {/* Hình ảnh sản phẩm (nếu có) hoặc icon placeholder */}
-                                {detail.productVariant?.product?.images?.[0]?.url ? (
-                                  <img src={`http://localhost:8080/api/v1/files/${detail.productVariant.product.images[0].url}`} alt="" className="w-full h-full object-cover" />
+                                {/* Hình ảnh mẫu (nếu có) hoặc ảnh đại diện sản phẩm */}
+                                {detail.productVariant?.imageUrl || detail.productVariant?.product?.images?.[0]?.imageUrl ? (
+                                  <img src={detail.productVariant?.imageUrl || detail.productVariant?.product?.images?.[0]?.imageUrl} alt="" className="w-full h-full object-cover" />
                                 ) : (
                                   <Package size={24} className="text-gray-300" />
                                 )}

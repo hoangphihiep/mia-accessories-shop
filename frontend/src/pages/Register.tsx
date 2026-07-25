@@ -4,8 +4,11 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRegister } from '../hooks/useAuthMutations';
-import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { useGoogleLogin } from '@react-oauth/google';
+import { useFacebookLogin } from '../hooks/useFacebookLogin';
+import { AuthService } from '../services/auth.service';
 
 const registerSchema = z.object({
   firstName: z.string().min(1, 'Vui lòng nhập tên').max(50),
@@ -22,7 +25,33 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const { mutateAsync: registerMutation, isPending } = useRegister();
   const navigate = useNavigate();
-  const { showToast } = useToast();
+  const { login } = useAuth();
+  
+  const { login: fbLogin } = useFacebookLogin(import.meta.env.VITE_FACEBOOK_APP_ID || 'dummy-app-id');
+
+  const handleOAuthSuccess = async (provider: 'google' | 'facebook', token: string) => {
+    try {
+      setApiError('');
+      const response = await (provider === 'google' 
+        ? AuthService.oauth2Google(token) 
+        : AuthService.oauth2Facebook(token));
+        
+      login(response.token, response.refreshToken, response.user, true);
+      
+      if (response.user?.role?.name === 'ROLE_ADMIN' || response.user?.role?.name === 'ROLE_STAFF') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
+    } catch (err: any) {
+      setApiError(err.response?.data?.message || `Đăng ký ${provider} thất bại`);
+    }
+  };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: (tokenResponse) => handleOAuthSuccess('google', tokenResponse.access_token),
+    onError: () => setApiError('Đăng ký Google thất bại'),
+  });
 
   const {
     register,
@@ -250,7 +279,7 @@ export default function Register() {
             <div className="mt-8 grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => showToast('Tính năng đang phát triển', 'info')}
+                onClick={() => googleLogin()}
                 className="w-full inline-flex justify-center items-center py-2.5 px-4 rounded-xl shadow-sm bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-100 transition-all duration-200 hover:-translate-y-0.5"
               >
                 <svg className="h-5 w-5 mr-2.5" viewBox="0 0 24 24" fill="currentColor">
@@ -260,7 +289,15 @@ export default function Register() {
               </button>
               <button
                 type="button"
-                onClick={() => showToast('Tính năng đang phát triển', 'info')}
+                onClick={() => {
+                  fbLogin((response: any) => {
+                    if (response?.accessToken) {
+                      handleOAuthSuccess('facebook', response.accessToken);
+                    } else {
+                      setApiError('Đăng ký Facebook thất bại');
+                    }
+                  });
+                }}
                 className="w-full inline-flex justify-center items-center py-2.5 px-4 rounded-xl shadow-sm bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-100 transition-all duration-200 hover:-translate-y-0.5"
               >
                 <svg className="h-5 w-5 mr-2.5 text-[#1877F2]" viewBox="0 0 24 24" fill="currentColor">

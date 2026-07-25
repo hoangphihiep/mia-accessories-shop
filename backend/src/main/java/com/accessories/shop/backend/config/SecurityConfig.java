@@ -41,7 +41,8 @@ public class SecurityConfig {
                             "/api/v1/materials", "/api/v1/materials/**", 
                             "/api/v1/variants", "/api/v1/variants/**", 
                             "/api/v1/settings", "/api/v1/settings/**", 
-                            "/api/v1/reviews", "/api/v1/reviews/**").permitAll()
+                            "/api/v1/reviews", "/api/v1/reviews/**",
+                            "/api/v1/collections", "/api/v1/collections/**").permitAll()
                         // Cho phép tra cứu đơn hàng không cần đăng nhập
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/track").permitAll()
                         // Cho phép Admin và Staff

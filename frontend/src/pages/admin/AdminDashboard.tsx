@@ -1,12 +1,12 @@
 import { DollarSign, ShoppingBag, AlertCircle, ArrowUpRight, ArrowDownRight, TrendingUp, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useDashboardStats, useRecentOrders, useDailyRevenue, useTopProducts } from '../../hooks/useAdmin';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { useDashboardStats, useRecentOrders, useDailyProductSales, useTopProducts } from '../../hooks/useAdmin';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 export default function AdminDashboard() {
   const { data: statsData, isLoading: isStatsLoading, isError: isStatsError } = useDashboardStats();
   const { data: ordersData = [], isLoading: isOrdersLoading, isError: isOrdersError } = useRecentOrders();
-  const { data: revenueData = [], isLoading: isRevenueLoading } = useDailyRevenue();
+  const { data: salesData = [], isLoading: isSalesLoading } = useDailyProductSales();
   const { data: topProductsData = [], isLoading: isProductsLoading } = useTopProducts();
 
   const stats = {
@@ -30,7 +30,7 @@ export default function AdminDashboard() {
         <p className="text-gray-500 max-w-md mx-auto mb-8">
           Không thể tải dữ liệu bảng điều khiển lúc này. Vui lòng kiểm tra lại kết nối mạng hoặc liên hệ quản trị viên hệ thống.
         </p>
-        <button 
+        <button
           onClick={() => window.location.reload()}
           className="px-8 py-3 bg-gray-900 text-white rounded-full font-bold uppercase tracking-wider text-sm hover:bg-gray-800 transition-colors shadow-lg shadow-gray-900/20"
         >
@@ -40,7 +40,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (isStatsLoading || isOrdersLoading || isRevenueLoading || isProductsLoading) return (
+  if (isStatsLoading || isOrdersLoading || isSalesLoading || isProductsLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh]">
       <div className="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin mb-4"></div>
       <p className="text-gray-500 font-bold uppercase tracking-widest text-sm animate-pulse">Đang tải dữ liệu...</p>
@@ -48,38 +48,38 @@ export default function AdminDashboard() {
   );
 
   const STATS_CARDS = [
-    { 
-      name: 'Doanh Thu Tháng Này', 
-      value: `${stats.revenueThisMonth.toLocaleString('vi-VN')}đ`, 
-      icon: DollarSign, 
-      color: 'text-emerald-500', 
-      bg: 'bg-emerald-50', 
+    {
+      name: 'Doanh Thu Tháng Này',
+      value: `${stats.revenueThisMonth.toLocaleString('vi-VN')}đ`,
+      icon: DollarSign,
+      color: 'text-emerald-500',
+      bg: 'bg-emerald-50',
       border: 'border-emerald-100',
       trend: stats.revenueTrend
     },
-    { 
-      name: 'Đơn Hàng Tháng Này', 
-      value: stats.ordersThisMonth.toString(), 
-      icon: ShoppingBag, 
-      color: 'text-blue-500', 
-      bg: 'bg-blue-50', 
+    {
+      name: 'Đơn Hàng Tháng Này',
+      value: stats.ordersThisMonth.toString(),
+      icon: ShoppingBag,
+      color: 'text-blue-500',
+      bg: 'bg-blue-50',
       border: 'border-blue-100',
       trend: stats.ordersTrend
     },
-    { 
-      name: 'Đơn Chờ Xử Lý', 
-      value: stats.pendingOrders.toString(), 
-      icon: AlertCircle, 
-      color: 'text-amber-500', 
-      bg: 'bg-amber-50', 
+    {
+      name: 'Đơn Chờ Xử Lý',
+      value: stats.pendingOrders.toString(),
+      icon: AlertCircle,
+      color: 'text-amber-500',
+      bg: 'bg-amber-50',
       border: 'border-amber-100'
     },
-    { 
-      name: 'Sản Phẩm Sắp Hết', 
-      value: stats.lowStockItems.toString(), 
-      icon: AlertCircle, 
-      color: 'text-rose-500', 
-      bg: 'bg-rose-50', 
+    {
+      name: 'Sản Phẩm Sắp Hết',
+      value: stats.lowStockItems.toString(),
+      icon: AlertCircle,
+      color: 'text-rose-500',
+      bg: 'bg-rose-50',
       border: 'border-rose-100'
     },
   ];
@@ -88,9 +88,9 @@ export default function AdminDashboard() {
     <div className="space-y-8">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {STATS_CARDS.map((stat, i) => (
-          <div key={stat.name} 
-               className={`bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden group ${stat.value !== '0' && stat.name === 'Đơn Chờ Xử Lý' ? 'ring-2 ring-amber-400 ring-offset-2' : ''}`}>
+        {STATS_CARDS.map((stat) => (
+          <div key={stat.name}
+            className={`bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1 relative overflow-hidden group ${stat.value !== '0' && stat.name === 'Đơn Chờ Xử Lý' ? 'ring-2 ring-amber-400 ring-offset-2' : ''}`}>
             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 group-hover:rotate-12 duration-500">
               <stat.icon size={100} />
             </div>
@@ -102,7 +102,7 @@ export default function AdminDashboard() {
                 <h3 className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{stat.name}</h3>
                 <p className="text-3xl font-black tracking-tighter text-gray-900">{stat.value}</p>
               </div>
-              
+
               {stat.trend !== undefined && (
                 <div className="mt-4 flex items-center gap-1.5">
                   <div className={`flex items-center text-[11px] font-black tracking-wider px-2 py-1 rounded-full ${stat.trend >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
@@ -119,42 +119,59 @@ export default function AdminDashboard() {
 
       {/* Chart & Top Products Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Revenue Chart */}
         <div className="lg:col-span-2 bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
           <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-white/50 backdrop-blur-xl">
             <div>
               <h2 className="font-black uppercase tracking-widest text-xl text-gray-900 flex items-center gap-2">
                 <TrendingUp size={24} className="text-emerald-500" />
-                Biểu đồ Doanh thu
+                Sản lượng bán ra
               </h2>
-              <p className="text-gray-400 text-sm mt-1">Biến động doanh thu theo từng ngày trong tháng</p>
+              <p className="text-gray-400 text-sm mt-1">Số lượng sản phẩm và các mặt hàng được mua theo từng ngày</p>
             </div>
           </div>
           <div className="p-6 h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <AreaChart data={salesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} dy={10} />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#9ca3af', fontSize: 12}}
-                  tickFormatter={(value) => `${value / 1000000}M`}
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#9ca3af', fontSize: 12 }}
                   dx={-10}
                 />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
-                  formatter={(value: number) => [`${value.toLocaleString('vi-VN')}đ`, 'Doanh thu']}
-                  labelStyle={{ fontWeight: 'bold', color: '#374151' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-white p-4 rounded-2xl shadow-xl border border-gray-100">
+                          <p className="font-black text-gray-900 mb-2">{label}</p>
+                          <p className="text-emerald-600 font-bold mb-1">
+                            Tổng SP: {data.totalQuantity}
+                          </p>
+                          {data.productsDetail && (
+                            <div className="text-xs text-gray-500 mt-2 border-t pt-2 max-w-[200px]">
+                              <span className="font-bold text-gray-700 block mb-1">Mặt hàng:</span>
+                              {data.productsDetail}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                <Area type="monotone" dataKey="totalQuantity" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -175,14 +192,14 @@ export default function AdminDashboard() {
             {topProductsData.map((item: any, index: number) => (
               <div key={index} className="flex items-center gap-4 p-4 rounded-2xl border border-gray-50 hover:bg-gray-50/50 transition-colors">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm
-                  ${index === 0 ? 'bg-amber-100 text-amber-600' : 
-                    index === 1 ? 'bg-gray-100 text-gray-600' : 
-                    index === 2 ? 'bg-orange-100 text-orange-600' : 
-                    'bg-slate-50 text-slate-400'}`}>
+                  ${index === 0 ? 'bg-amber-100 text-amber-600' :
+                    index === 1 ? 'bg-gray-100 text-gray-600' :
+                      index === 2 ? 'bg-orange-100 text-orange-600' :
+                        'bg-slate-50 text-slate-400'}`}>
                   #{index + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-gray-900 truncate">{item.productName}</h4>
+                  <h4 className="font-bold text-gray-900 truncate" title={item.productName}>{item.productName}</h4>
                   <p className="text-xs text-gray-500 mt-0.5">{item.variantName}</p>
                 </div>
                 <div className="text-right">
@@ -233,10 +250,10 @@ export default function AdminDashboard() {
                   <td className="p-5 font-black text-gray-900">{order.totalAmount.toLocaleString('vi-VN')}đ</td>
                   <td className="p-5 pr-8">
                     <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border
-                      ${order.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
-                        order.status === 'PENDING' ? 'bg-amber-50 text-amber-600 border-amber-100' : 
-                        order.status === 'CANCELLED' ? 'bg-rose-50 text-rose-600 border-rose-100' : 
-                        'bg-sky-50 text-sky-600 border-sky-100'}`}>
+                      ${order.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        order.status === 'PENDING' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                          order.status === 'CANCELLED' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                            'bg-sky-50 text-sky-600 border-sky-100'}`}>
                       {order.status}
                     </span>
                   </td>

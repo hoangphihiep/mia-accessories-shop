@@ -1,23 +1,12 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCollection } from '../hooks/useCollections';
-import { ArrowLeft, ShoppingBag } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { ArrowLeft } from 'lucide-react';
+import ProductCard from '../components/ui/ProductCard';
 
 export default function CollectionDetail() {
   const { slug } = useParams<{ slug: string }>();
   const { data: collection, isLoading, isError } = useCollection(slug || '');
   const navigate = useNavigate();
-  const { addToCart } = useCart();
-
-  const handleAddToCart = (product: any, e: React.MouseEvent) => {
-    e.preventDefault();
-    if (product.variants && product.variants.length > 0) {
-      // Navigate to product detail if it has variants to let user choose
-      navigate(`/product/${product.id}`);
-    } else {
-      addToCart({ productId: product.id, quantity: 1 });
-    }
-  };
 
   if (isLoading) {
     return (
@@ -70,7 +59,7 @@ export default function CollectionDetail() {
       <div className="py-24 bg-white text-center px-4">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold uppercase tracking-widest text-gray-900 mb-8">Cảm hứng thiết kế</h2>
-          <p className="text-lg md:text-xl text-gray-600 leading-relaxed font-serif italic">
+          <p className="text-lg md:text-xl text-gray-600 leading-relaxed font-medium italic">
             "{collection.description}"
           </p>
         </div>
@@ -87,38 +76,7 @@ export default function CollectionDetail() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8 max-w-7xl mx-auto">
             {collection.products.map((product: any) => (
-              <Link key={product.id} to={`/product/${product.id}`} className="group relative block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-50">
-                <div className="aspect-[4/5] relative bg-gray-100 overflow-hidden">
-                  <img 
-                    src={product.images && product.images.length > 0 ? `http://localhost:8080/api/v1/files/${product.images[0].url}` : 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=800&auto=format&fit=crop'} 
-                    alt={product.name} 
-                    className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-                  />
-                  {product.images && product.images.length > 1 && (
-                    <img 
-                      src={`http://localhost:8080/api/v1/files/${product.images[1].url}`}
-                      alt={product.name} 
-                      className="object-cover w-full h-full absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                    />
-                  )}
-                  
-                  {/* Quick Add to Cart */}
-                  <div className="absolute bottom-0 left-0 w-full p-4 translate-y-full group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-t from-black/60 to-transparent">
-                    <button 
-                      onClick={(e) => handleAddToCart(product, e)}
-                      className="w-full bg-white text-gray-900 font-bold uppercase tracking-widest text-xs py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-900 hover:text-white transition-colors"
-                    >
-                      <ShoppingBag size={14} /> Thêm vào giỏ
-                    </button>
-                  </div>
-                </div>
-                <div className="p-4 md:p-5">
-                  <h3 className="font-bold text-gray-900 mb-1 truncate">{product.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-gray-900">{(product.variants?.[0]?.price || 0).toLocaleString('vi-VN')}đ</span>
-                  </div>
-                </div>
-              </Link>
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}

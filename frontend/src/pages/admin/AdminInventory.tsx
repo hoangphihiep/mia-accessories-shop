@@ -11,11 +11,11 @@ export default function AdminInventory() {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   const [showDrawer, setShowDrawer] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'create' | 'view'>('create');
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
 
@@ -27,16 +27,16 @@ export default function AdminInventory() {
     try {
       const [recRes, prodRes, supRes] = await Promise.all([
         api.get('/admin/inventory'),
-        api.get('/products?size=1000'), 
+        api.get('/products?size=1000'),
         api.get('/admin/suppliers')
       ]);
       // Sort receipts by ID desc to show newest first
       const sortedReceipts = recRes.data.sort((a: any, b: any) => b.id - a.id);
       setReceipts(sortedReceipts);
       setSuppliers(supRes.data);
-      
+
       const allProducts = prodRes.data.content || prodRes.data;
-      const allVariants = allProducts.flatMap((p: any) => 
+      const allVariants = allProducts.flatMap((p: any) =>
         (p.variants || []).map((v: any) => ({ ...v, productName: p.name }))
       );
       setVariants(allVariants);
@@ -74,7 +74,7 @@ export default function AdminInventory() {
       showToast('Vui lòng chọn nhà cung cấp', 'error');
       return;
     }
-    
+
     const validDetails = details.filter(d => d.variantId && d.quantity > 0 && d.unitPrice >= 0);
     if (validDetails.length === 0) {
       showToast('Vui lòng thêm ít nhất 1 sản phẩm hợp lệ', 'error');
@@ -120,7 +120,7 @@ export default function AdminInventory() {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
-  const filteredReceipts = receipts.filter(r => 
+  const filteredReceipts = receipts.filter(r =>
     r.id.toString().includes(searchTerm) ||
     r.supplier?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -132,108 +132,107 @@ export default function AdminInventory() {
   );
 
   return (
-    <div className="relative flex w-full h-[calc(100vh-6rem)] overflow-hidden">
-      <div className="flex-1 flex flex-col bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
-      <div className="p-8 border-b border-gray-50 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 bg-white/50 backdrop-blur-xl shrink-0 z-10 relative">
-        <div>
-          <h2 className="font-black uppercase tracking-widest text-xl text-gray-900 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <Package size={20} />
-            </div>
-            Lịch sử Nhập kho
-          </h2>
-          <p className="text-gray-400 text-sm mt-2 ml-13">Quản lý và theo dõi các phiếu nhập hàng</p>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row w-full xl:w-auto gap-4">
-          <div className="relative w-full sm:w-72">
-            <input 
-              type="text"
-              placeholder="Tìm mã phiếu, nhà cung cấp..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all placeholder:text-gray-400"
-            />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+    <>
+      <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 h-[calc(100vh-9rem)] flex flex-col overflow-hidden">
+        <div className="p-8 border-b border-gray-50 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 bg-white/50 backdrop-blur-xl shrink-0 z-10 relative">
+          <div>
+            <h2 className="font-black uppercase tracking-widest text-xl text-gray-900 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <Package size={20} />
+              </div>
+              Lịch sử Nhập kho
+            </h2>
+            <p className="text-gray-400 text-sm mt-2 ml-13">Quản lý và theo dõi các phiếu nhập hàng</p>
           </div>
-          
-          {user?.role?.name === 'ROLE_ADMIN' && (
-            <button 
-              onClick={openCreateDrawer}
-              className="flex items-center justify-center gap-2 bg-gray-900 text-white px-6 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 transition-all w-full sm:w-auto whitespace-nowrap"
-            >
-              <Plus size={18} />
-              <span>Tạo Phiếu Nhập</span>
-            </button>
-          )}
-        </div>
-      </div>
 
-      <div className="flex-1 overflow-x-auto custom-scrollbar relative z-0">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50/80 text-gray-400 text-[11px] font-black uppercase tracking-[0.2em] sticky top-0 backdrop-blur-sm z-10">
-              <th className="p-5 pl-8 border-b border-gray-100 w-32">Mã Phiếu</th>
-              <th className="p-5 border-b border-gray-100">Ngày nhập</th>
-              <th className="p-5 border-b border-gray-100">Nhà cung cấp</th>
-              <th className="p-5 pr-8 border-b border-gray-100 text-right">Tổng tiền</th>
-              <th className="p-5 pr-8 border-b border-gray-100 text-right w-24">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody className="text-sm">
-            {filteredReceipts.map((receipt) => (
-              <tr key={receipt.id} onClick={() => openViewDrawer(receipt)} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors group cursor-pointer">
-                <td className="p-5 pl-8 font-bold text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <FileText size={16} className="text-gray-300" />
-                    #{receipt.id}
-                  </div>
-                </td>
-                <td className="p-5 text-gray-500 font-medium">{new Date(receipt.createdAt).toLocaleString('vi-VN')}</td>
-                <td className="p-5 font-bold text-gray-900">{receipt.supplier}</td>
-                <td className="p-5 pr-8 font-black text-emerald-600 text-right">+{formatCurrency(receipt.totalCost)}</td>
-                <td className="p-5 pr-8 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="p-2 text-sky-600 hover:bg-sky-50 rounded-xl transition-all font-bold text-xs uppercase tracking-wider flex items-center justify-end gap-1 w-full">
-                    <Eye size={14} /> Xem
-                  </button>
-                </td>
-              </tr>
-            ))}
-            
-            {filteredReceipts.length === 0 && (
-              <tr>
-                <td colSpan={5} className="p-0">
-                  <div className="flex flex-col items-center justify-center py-24 text-center px-4">
-                    <div className="w-24 h-24 rounded-full bg-gray-50 flex items-center justify-center mb-6">
-                      <Box size={40} className="text-gray-300" />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">Chưa có phiếu nhập kho nào</h3>
-                    <p className="text-gray-500 max-w-sm mb-8">
-                      {searchTerm ? 'Không tìm thấy kết quả phù hợp với từ khóa của bạn.' : 'Tạo phiếu nhập đầu tiên để cập nhật số lượng tồn kho cho các sản phẩm.'}
-                    </p>
-                  </div>
-                </td>
-              </tr>
+          <div className="flex flex-col sm:flex-row w-full xl:w-auto gap-4">
+            <div className="relative w-full sm:w-72">
+              <input
+                type="text"
+                placeholder="Tìm mã phiếu, nhà cung cấp..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all placeholder:text-gray-400"
+              />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            </div>
+
+            {user?.role?.name === 'ROLE_ADMIN' && (
+              <button
+                onClick={openCreateDrawer}
+                className="flex items-center justify-center gap-2 bg-gray-900 text-white px-6 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 transition-all w-full sm:w-auto whitespace-nowrap"
+              >
+                <Plus size={18} />
+                <span>Tạo Phiếu Nhập</span>
+              </button>
             )}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-x-auto custom-scrollbar relative z-0">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50/80 text-gray-400 text-[11px] font-black uppercase tracking-[0.2em] sticky top-0 backdrop-blur-sm z-10">
+                <th className="p-5 pl-8 border-b border-gray-100 w-32">Mã Phiếu</th>
+                <th className="p-5 border-b border-gray-100">Ngày nhập</th>
+                <th className="p-5 border-b border-gray-100">Nhà cung cấp</th>
+                <th className="p-5 pr-8 border-b border-gray-100 text-right">Tổng tiền</th>
+                <th className="p-5 pr-8 border-b border-gray-100 text-right w-24">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm">
+              {filteredReceipts.map((receipt) => (
+                <tr key={receipt.id} onClick={() => openViewDrawer(receipt)} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors group cursor-pointer">
+                  <td className="p-5 pl-8 font-bold text-gray-400">
+                    <div className="flex items-center gap-2">
+                      <FileText size={16} className="text-gray-300" />
+                      #{receipt.id}
+                    </div>
+                  </td>
+                  <td className="p-5 text-gray-500 font-medium">{new Date(receipt.createdAt).toLocaleString('vi-VN')}</td>
+                  <td className="p-5 font-bold text-gray-900">{receipt.supplier}</td>
+                  <td className="p-5 pr-8 font-black text-emerald-600 text-right">+{formatCurrency(receipt.totalCost)}</td>
+                  <td className="p-5 pr-8 text-right">
+                    <button className="p-2 text-sky-600 hover:bg-sky-50 rounded-xl transition-all font-bold text-xs uppercase tracking-wider flex items-center justify-end gap-1 w-full">
+                      <Eye size={14} /> Xem
+                    </button>
+                  </td>
+                </tr>
+              ))}
+
+              {filteredReceipts.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="p-0">
+                    <div className="flex flex-col items-center justify-center py-24 text-center px-4">
+                      <div className="w-24 h-24 rounded-full bg-gray-50 flex items-center justify-center mb-6">
+                        <Box size={40} className="text-gray-300" />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Chưa có phiếu nhập kho nào</h3>
+                      <p className="text-gray-500 max-w-sm mb-8">
+                        {searchTerm ? 'Không tìm thấy kết quả phù hợp với từ khóa của bạn.' : 'Tạo phiếu nhập đầu tiên để cập nhật số lượng tồn kho cho các sản phẩm.'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
       </div>
 
       {/* Backdrop Overlay */}
       {showDrawer && (
-        <div 
+        <div
           className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 transition-opacity animate-in fade-in duration-300"
           onClick={() => setShowDrawer(false)}
         />
       )}
 
       {/* Side Drawer Content */}
-      <div 
-        className={`fixed top-0 right-0 h-screen w-full lg:w-[600px] bg-white shadow-2xl border-l border-gray-100 z-50 transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${
-          showDrawer ? 'translate-x-0' : 'translate-x-[110%]'
-        }`}
+      <div
+        className={`fixed top-0 right-0 bottom-0 w-full lg:w-[600px] bg-white shadow-2xl border-l border-gray-100 z-50 transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${showDrawer ? 'translate-x-0' : 'translate-x-[110%]'
+          }`}
       >
         <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white/80 backdrop-blur-xl">
           <h3 className="text-xl font-black uppercase tracking-widest text-gray-900 flex items-center gap-2">
@@ -243,14 +242,14 @@ export default function AdminInventory() {
               <><FileText size={20} className="text-primary" /> Chi tiết phiếu nhập #{selectedReceipt?.id}</>
             )}
           </h3>
-          <button 
-            onClick={() => setShowDrawer(false)} 
+          <button
+            onClick={() => setShowDrawer(false)}
             className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
           >
             <X size={20} />
           </button>
         </div>
-        
+
         {drawerMode === 'create' ? (
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
             <div className="p-8 space-y-6 flex-1">
@@ -258,7 +257,7 @@ export default function AdminInventory() {
                 <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-3">
                   Nhà cung cấp <span className="text-red-500">*</span>
                 </label>
-                <select 
+                <select
                   required
                   value={supplierId}
                   onChange={e => setSupplierId(e.target.value)}
@@ -270,7 +269,7 @@ export default function AdminInventory() {
                   ))}
                 </select>
                 {suppliers.length === 0 && (
-                  <p className="text-red-500 text-xs mt-2 flex items-center gap-1"><FileWarning size={12}/> Chưa có nhà cung cấp nào.</p>
+                  <p className="text-red-500 text-xs mt-2 flex items-center gap-1"><FileWarning size={12} /> Chưa có nhà cung cấp nào.</p>
                 )}
               </div>
 
@@ -283,13 +282,13 @@ export default function AdminInventory() {
                     <Plus size={14} /> Thêm dòng
                   </button>
                 </div>
-                
+
                 <div className="space-y-3">
                   {details.map((detail, index) => (
                     <div key={index} className="bg-white border border-gray-200 p-4 rounded-xl shadow-sm space-y-3">
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex-1 min-w-0">
-                          <select 
+                          <select
                             required
                             value={detail.variantId}
                             onChange={e => handleDetailChange(index, 'variantId', e.target.value)}
@@ -305,12 +304,12 @@ export default function AdminInventory() {
                           <Trash2 size={16} />
                         </button>
                       </div>
-                      
+
                       <div className="flex gap-3">
                         <div className="flex-1">
                           <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Số lượng</label>
-                          <input 
-                            type="number" 
+                          <input
+                            type="number"
                             min="1"
                             required
                             value={detail.quantity}
@@ -320,8 +319,8 @@ export default function AdminInventory() {
                         </div>
                         <div className="flex-1">
                           <label className="block text-[10px] font-black uppercase text-gray-400 mb-1">Đơn giá (VNĐ)</label>
-                          <input 
-                            type="number" 
+                          <input
+                            type="number"
                             min="0"
                             required
                             value={detail.unitPrice}
@@ -354,15 +353,15 @@ export default function AdminInventory() {
                 <span className="text-2xl font-black text-rose-600">{formatCurrency(totalCreateCost)}</span>
               </div>
               <div className="flex justify-end gap-3">
-                <button 
-                  type="button" 
-                  onClick={() => setShowDrawer(false)} 
+                <button
+                  type="button"
+                  onClick={() => setShowDrawer(false)}
                   className="px-6 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-all disabled:opacity-50"
                   disabled={isSubmitting}
                 >
                   Hủy bỏ
                 </button>
-                <button 
+                <button
                   type="submit"
                   className="px-8 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition-all flex items-center gap-2 shadow-lg shadow-gray-900/20 disabled:opacity-50"
                   disabled={isSubmitting}
@@ -428,6 +427,6 @@ export default function AdminInventory() {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

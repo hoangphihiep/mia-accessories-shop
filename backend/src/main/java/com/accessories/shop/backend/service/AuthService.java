@@ -16,6 +16,11 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Map;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.apache.commons.lang3.RandomStringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -128,6 +133,138 @@ public class AuthService {
                 .build();
         refreshTokenRepository.save(refreshToken);
 
+        return AuthResponse.builder()
+                .token(jwtToken)
+                .refreshToken(refreshTokenString)
+                .user(mapToUserResponse(user))
+                .build();
+    }
+
+    public AuthResponse oauth2Google(String token) {
+        RestTemplate restTemplate = new RestTemplate();
+        String url = "https://www.googleapis.com/oauth2/v3/userinfo?access_token=" + token;
+        
+        try {
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> body = response.getBody();
+                String email = (String) body.get("email");
+                String name = (String) body.get("name");
+                String sub = (String) body.get("sub");
+                String picture = (String) body.get("picture");
+                
+                return processOAuth2User(email, name, "GOOGLE", sub, picture);
+            } else {
+                throw new BadRequestException("Google token không hợp lệ.");
+            }
+        } catch (Exception e) {
+            throw new BadRequestException("Lỗi xác thực Google: " + e.getMessage());
+        }
+    }
+
+    public AuthResponse oauth2Facebook(String token) {
+        RestTemplate restTemplate = new RestTemplate();
+        String url = "https://graph.facebook.com/me?fields=id,name,email,picture&access_token=" + token;
+        
+        try {
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> body = response.getBody();
+                String email = (String) body.get("email");
+                String name = (String) body.get("name");
+                String id = (String) body.get("id");
+                
+                // Trích xuất hình ảnh Facebook nếu có
+                String pictureUrl = null;
+                if (body.containsKey("picture")) {
+                    Map<String, Object> pictureObj = (Map<String, Object>) body.get("picture");
+                    if (pictureObj.containsKey("data")) {
+                        Map<String, Object> dataObj = (Map<String, Object>) pictureObj.get("data");
+                        pictureUrl = (String) dataObj.get("url");
+                    }
+                }
+                
+                if (email == null) {
+                    throw new BadRequestException("Không thể lấy email từ tài khoản Facebook của bạn. Vui lòng cập nhật quyền truy cập email.");
+                }
+                
+                return processOAuth2User(email, name, "FACEBOOK", id, pictureUrl);
+            } else {
+                throw new BadRequestException("Facebook token không hợp lệ.");
+            }
+        } catch (Exception e) {
+            throw new BadRequestException("Lỗi xác thực Facebook: " + e.getMessage());
+        }
+    }
+
+    private AuthResponse processOAuth2User(String email, String name, String provider, String providerId, String avatar) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        User user;
+        
+        if (userOptional.isPresent()) {
+            user = userOptional.get();
+            
+            // Kiểm tra tài khoản có bị vô hiệu hóa không
+            if (user.getIsActive() != null && !user.getIsActive()) {
+                throw new BadRequestException("Tài khoản của bạn đã bị vô hiệu hóa.");
+            }
+            
+            // Kiểm tra tài khoản có đang bị tạm khóa không
+            if (!user.isAccountNonLocked()) {
+                throw new BadRequestException("Tài khoản của bạn đang bị tạm khóa. Vui lòng thử lại sau.");
+            }
+
+            // Cập nhật provider nếu chưa có hoặc đang là LOCAL
+            if ("LOCAL".equals(user.getProvider()) || user.getProvider() == null) {
+                user.setProvider(provider);
+                user.setProviderId(providerId);
+            }
+            if (user.getAvatar() == null && avatar != null) {
+                user.setAvatar(avatar);
+            }
+            
+            // Ngăn chặn chiếm đoạt tài khoản (Account Takeover)
+            // Nếu tài khoản trước đó chưa verify email, random mật khẩu để hủy bỏ pass cũ và verify email
+            if (user.getIsEmailVerified() != null && !user.getIsEmailVerified()) {
+                user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+                user.setIsEmailVerified(true);
+            }
+        } else {
+            // Đăng ký người dùng mới
+            Role customerRole = roleRepository.findByName("ROLE_CUSTOMER")
+                    .orElseThrow(() -> new RuntimeException("Lỗi hệ thống: Không tìm thấy quyền ROLE_CUSTOMER"));
+            
+            // Generate a random password since oauth users won't use it, but DB requires it
+            String randomPassword = UUID.randomUUID().toString();
+            
+            user = User.builder()
+                    .email(email)
+                    .password(passwordEncoder.encode(randomPassword))
+                    .fullName(name != null ? name : "Người dùng " + provider)
+                    .provider(provider)
+                    .providerId(providerId)
+                    .avatar(avatar)
+                    .role(customerRole)
+                    .isActive(true)
+                    .isEmailVerified(true) // OAuth đã xác thực email
+                    .build();
+        }
+        
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
+        
+        // Sinh JWT token
+        String jwtToken = jwtService.generateToken(user.getEmail(), user.getRole().getName());
+        
+        refreshTokenRepository.deleteByUser(user);
+        String refreshTokenString = UUID.randomUUID().toString();
+        RefreshToken refreshToken = RefreshToken.builder()
+                .token(refreshTokenString)
+                .user(user)
+                .expiryDate(LocalDateTime.now().plusDays(7))
+                .build();
+        refreshTokenRepository.save(refreshToken);
+        
         return AuthResponse.builder()
                 .token(jwtToken)
                 .refreshToken(refreshTokenString)

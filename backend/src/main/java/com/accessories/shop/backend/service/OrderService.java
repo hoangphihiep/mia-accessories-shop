@@ -239,10 +239,6 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với ID: " + orderId));
         order.setIsPaid(isPaid);
-        if (isPaid && order.getStatus().equals("PENDING")) {
-            // Đã thanh toán thành công thì chuyển trạng thái đơn hàng sang Đã xác nhận (CONFIRMED)
-            order.setStatus("CONFIRMED");
-        }
         orderRepository.save(order);
     }
 }

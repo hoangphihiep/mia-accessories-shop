@@ -134,4 +134,63 @@ public class DashboardController {
         
         return ResponseEntity.ok(topProducts);
     }
+
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @GetMapping("/daily-product-sales")
+    public ResponseEntity<List<Map<String, Object>>> getDailyProductSales() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfMonth = now.with(TemporalAdjusters.firstDayOfMonth()).withHour(0).withMinute(0).withSecond(0);
+        LocalDateTime endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth()).withHour(23).withMinute(59).withSecond(59);
+
+        List<Order> completedOrders = orderRepository.findByStatusAndCreatedAtBetween("COMPLETED", startOfMonth, endOfMonth);
+
+        Map<Integer, Integer> dailyQuantity = new HashMap<>();
+        Map<Integer, Map<String, Integer>> dailyProducts = new HashMap<>();
+
+        for (Order order : completedOrders) {
+            int day = order.getCreatedAt().getDayOfMonth();
+            for (var detail : order.getOrderDetails()) {
+                int qty = detail.getQuantity();
+                dailyQuantity.merge(day, qty, Integer::sum);
+                
+                dailyProducts.putIfAbsent(day, new HashMap<>());
+                String productName = detail.getProductVariant().getProduct().getName();
+                dailyProducts.get(day).merge(productName, qty, Integer::sum);
+            }
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        int daysInMonth = now.toLocalDate().lengthOfMonth();
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
+
+        for (int i = 1; i <= daysInMonth; i++) {
+            Map<String, Object> dayData = new HashMap<>();
+            java.time.LocalDate date = now.toLocalDate().withDayOfMonth(i);
+            dayData.put("date", date.format(formatter));
+            
+            int totalQty = dailyQuantity.getOrDefault(i, 0);
+            dayData.put("totalQuantity", totalQty);
+            
+            String productsDetail = "";
+            if (totalQty > 0) {
+                Map<String, Integer> prods = dailyProducts.get(i);
+                List<Map.Entry<String, Integer>> sortedProds = new ArrayList<>(prods.entrySet());
+                sortedProds.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+                
+                List<String> prodStrings = new ArrayList<>();
+                for (int j = 0; j < Math.min(3, sortedProds.size()); j++) {
+                    prodStrings.add(sortedProds.get(j).getKey() + " (" + sortedProds.get(j).getValue() + ")");
+                }
+                if (sortedProds.size() > 3) {
+                    prodStrings.add("...");
+                }
+                productsDetail = String.join(", ", prodStrings);
+            }
+            
+            dayData.put("productsDetail", productsDetail);
+            result.add(dayData);
+        }
+
+        return ResponseEntity.ok(result);
+    }
 }

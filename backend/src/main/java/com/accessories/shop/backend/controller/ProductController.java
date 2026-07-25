@@ -41,6 +41,12 @@ public class ProductController {
         return ResponseEntity.ok(productMapper.toResponse(product));
     }
 
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<ProductResponse> getProductBySlug(@PathVariable String slug) {
+        Product product = productService.getProductBySlug(slug);
+        return ResponseEntity.ok(productMapper.toResponse(product));
+    }
+
     // Tạo sản phẩm: POST http://localhost:8080/api/v1/products
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")

@@ -4,8 +4,11 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLogin } from '../hooks/useAuthMutations';
-import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { useGoogleLogin } from '@react-oauth/google';
+import { useFacebookLogin } from '../hooks/useFacebookLogin';
+import { AuthService } from '../services/auth.service';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Vui lòng nhập email').email('Định dạng email không hợp lệ'),
@@ -18,9 +21,39 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function Login() {
   const [apiError, setApiError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false);
   const { mutateAsync: loginMutation, isPending } = useLogin();
   const navigate = useNavigate();
-  const { showToast } = useToast();
+  const { login } = useAuth();
+  
+  const { login: fbLogin } = useFacebookLogin(import.meta.env.VITE_FACEBOOK_APP_ID || 'dummy-app-id');
+
+  const handleOAuthSuccess = async (provider: 'google' | 'facebook', token: string) => {
+    try {
+      setApiError('');
+      setIsOAuthLoading(true);
+      const response = await (provider === 'google' 
+        ? AuthService.oauth2Google(token) 
+        : AuthService.oauth2Facebook(token));
+        
+      login(response.token, response.refreshToken, response.user, true);
+      
+      if (response.user?.role?.name === 'ROLE_ADMIN' || response.user?.role?.name === 'ROLE_STAFF') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
+    } catch (err: any) {
+      setApiError(err.response?.data?.message || `Đăng nhập ${provider} thất bại`);
+    } finally {
+      setIsOAuthLoading(false);
+    }
+  };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: (tokenResponse) => handleOAuthSuccess('google', tokenResponse.access_token),
+    onError: () => setApiError('Đăng nhập Google bị hủy hoặc thất bại.'),
+  });
 
   const {
     register,
@@ -193,22 +226,43 @@ export default function Login() {
             <div className="mt-8 grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => showToast('Tính năng đang phát triển', 'info')}
-                className="w-full inline-flex justify-center items-center py-2.5 px-4 rounded-xl shadow-sm bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-100 transition-all duration-200 hover:-translate-y-0.5"
+                onClick={() => googleLogin()}
+                disabled={isOAuthLoading || isPending}
+                className="w-full inline-flex justify-center items-center py-2.5 px-4 rounded-xl shadow-sm bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-100 transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                <svg className="h-5 w-5 mr-2.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z" />
-                </svg>
+                {isOAuthLoading ? (
+                  <svg className="animate-spin h-5 w-5 mr-2.5 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                ) : (
+                  <svg className="h-5 w-5 mr-2.5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z" />
+                  </svg>
+                )}
                 Google
               </button>
+              
               <button
                 type="button"
-                onClick={() => showToast('Tính năng đang phát triển', 'info')}
-                className="w-full inline-flex justify-center items-center py-2.5 px-4 rounded-xl shadow-sm bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-100 transition-all duration-200 hover:-translate-y-0.5"
+                onClick={() => {
+                  fbLogin((response: any) => {
+                    if (response?.error) {
+                      setApiError(response.error);
+                    } else if (response?.accessToken) {
+                      handleOAuthSuccess('facebook', response.accessToken);
+                    } else {
+                      setApiError('Đăng nhập Facebook thất bại');
+                    }
+                  });
+                }}
+                disabled={isOAuthLoading || isPending}
+                className="w-full inline-flex justify-center items-center py-2.5 px-4 rounded-xl shadow-sm bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-100 transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                <svg className="h-5 w-5 mr-2.5 text-[#1877F2]" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
+                {isOAuthLoading ? (
+                  <svg className="animate-spin h-5 w-5 mr-2.5 text-[#1877F2]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                ) : (
+                  <svg className="h-5 w-5 mr-2.5 text-[#1877F2]" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                )}
                 Facebook
               </button>
             </div>

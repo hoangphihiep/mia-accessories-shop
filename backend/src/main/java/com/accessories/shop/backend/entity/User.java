@@ -50,6 +50,13 @@ public class User implements UserDetails {
     @Column
     private String avatar;
 
+    @Column(name = "provider", length = 50)
+    @Builder.Default
+    private String provider = "LOCAL";
+
+    @Column(name = "provider_id")
+    private String providerId;
+
     // Nối sang bảng Role để biết ông này là Khách hay Admin
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)

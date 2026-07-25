@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Filter, Search, X, SlidersHorizontal, ChevronRight } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
@@ -7,80 +7,88 @@ import ProductCard from '../components/ui/ProductCard';
 import Pagination from '../components/ui/Pagination';
 
 export default function Shop() {
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const urlSearchQuery = searchParams.get('search') || '';
-  const urlCategoryQuery = searchParams.get('category') || 'All';
+  // Read URL Params
+  const urlSearch = searchParams.get('search') || '';
+  const urlCategory = searchParams.get('category') || 'All';
+  const urlPrice = searchParams.get('price') || 'All';
+  const urlSort = searchParams.get('sort') || 'newest';
+  const page = parseInt(searchParams.get('page') || '0', 10);
 
-  // Filter & Pagination States
-  const [activeCategory, setActiveCategory] = useState(urlCategoryQuery);
-  const [priceRange, setPriceRange] = useState<string>('All');
-  const [sortBy, setSortBy] = useState<string>('newest');
-  const [localSearch, setLocalSearch] = useState(urlSearchQuery);
-  const [debouncedSearch, setDebouncedSearch] = useState(urlSearchQuery);
-  const [page, setPage] = useState(0);
+  // Local state for debouncing search input only
+  const [localSearch, setLocalSearch] = useState(urlSearch);
 
-  // Debounce search
+  // Sync back to localSearch if URL changes externally
+  useEffect(() => {
+    setLocalSearch(urlSearch);
+  }, [urlSearch]);
+
+  // Debounce logic for search
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(localSearch);
+      if (localSearch !== urlSearch) {
+        updateParams({ search: localSearch, page: '0' });
+      }
     }, 500);
     return () => clearTimeout(timer);
   }, [localSearch]);
 
-  // Reset page to 0 when filters change
-  useEffect(() => {
-    setPage(0);
-  }, [activeCategory, priceRange, debouncedSearch, sortBy]);
+  // Helper to update URL params
+  const updateParams = (newParams: Record<string, string>) => {
+    const currentParams = Object.fromEntries(searchParams.entries());
+    const merged = { ...currentParams, ...newParams };
+    
+    // Clean up empty params
+    Object.keys(merged).forEach(key => {
+      if (merged[key] === '' || merged[key] === 'All') {
+        delete merged[key];
+      }
+    });
+    
+    setSearchParams(merged);
+  };
 
   const queryParams: Record<string, any> = {
     page,
     size: 12,
   };
   
-  if (debouncedSearch) queryParams.search = debouncedSearch;
-  if (activeCategory !== 'All') queryParams.category = activeCategory;
+  if (urlSearch) queryParams.search = urlSearch;
+  if (urlCategory !== 'All') queryParams.category = urlCategory;
   
-  if (priceRange !== 'All') {
-    if (priceRange === 'under-300') queryParams.maxPrice = 299999;
-    if (priceRange === '300-500') {
+  if (urlPrice !== 'All') {
+    if (urlPrice === 'under-300') queryParams.maxPrice = 299999;
+    if (urlPrice === '300-500') {
       queryParams.minPrice = 300000;
       queryParams.maxPrice = 500000;
     }
-    if (priceRange === 'over-500') queryParams.minPrice = 500001;
+    if (urlPrice === 'over-500') queryParams.minPrice = 500001;
   }
-  if (sortBy === 'newest') queryParams.sort = 'createdAt,desc';
+  
+  if (urlSort === 'newest') queryParams.sort = 'createdAt,desc';
+  if (urlSort === 'price-asc') queryParams.sort = 'minPrice,asc';
+  if (urlSort === 'price-desc') queryParams.sort = 'minPrice,desc';
 
   const { data: productData, isLoading: loading } = useProducts(queryParams);
   const products = productData?.content || [];
   const totalPages = productData?.totalPages || 0;
   const totalElements = productData?.totalElements || 0;
 
-  // Update localSearch if URL changes (ví dụ user search từ Top Header)
-  useEffect(() => {
-    if (urlSearchQuery) {
-      setLocalSearch(urlSearchQuery);
-    }
-  }, [urlSearchQuery]);
-
-  useEffect(() => {
-    if (urlCategoryQuery) {
-      setActiveCategory(urlCategoryQuery);
-    }
-  }, [urlCategoryQuery]);
-
   const { data: categoryData } = useCategories();
-  const categories = [{ id: 'All', name: 'Tất cả' }, ...(categoryData || [])];
+  // Ensure we have { id, name, slug }
+  const categories = [{ id: 'All', name: 'Tất cả', slug: 'All' }, ...(categoryData || [])];
+
   const clearFilters = () => {
-    setActiveCategory('All');
-    setPriceRange('All');
-    setSortBy('newest');
+    setSearchParams({});
     setLocalSearch('');
   };
 
-  const hasActiveFilters = activeCategory !== 'All' || priceRange !== 'All' || sortBy !== 'newest' || localSearch !== '';
+  const hasActiveFilters = urlCategory !== 'All' || urlPrice !== 'All' || urlSort !== 'newest' || urlSearch !== '';
+
+  const setPage = (newPage: number) => {
+    updateParams({ page: newPage.toString() });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-24 selection:bg-gray-900 selection:text-white font-sans">
@@ -139,15 +147,15 @@ export default function Shop() {
                   {categories.map(cat => (
                     <button 
                       key={cat.id}
-                      onClick={() => setActiveCategory(cat.name === 'Tất cả' ? 'All' : cat.name)}
+                      onClick={() => updateParams({ category: cat.slug === 'All' ? 'All' : cat.slug, page: '0' })}
                       className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                        (activeCategory === cat.name || (activeCategory === 'All' && cat.name === 'Tất cả'))
+                        (urlCategory === cat.slug || (urlCategory === 'All' && cat.slug === 'All'))
                           ? 'bg-gray-900 text-white shadow-md' 
                           : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                       }`}
                     >
                       <span>{cat.name}</span>
-                      {(activeCategory === cat.name || (activeCategory === 'All' && cat.name === 'Tất cả')) && <ChevronRight size={14} className="opacity-70" />}
+                      {(urlCategory === cat.slug || (urlCategory === 'All' && cat.slug === 'All')) && <ChevronRight size={14} className="opacity-70" />}
                     </button>
                   ))}
                 </div>
@@ -165,15 +173,15 @@ export default function Shop() {
                   ].map(price => (
                     <label 
                       key={price.id} 
-                      onClick={() => setPriceRange(price.id)}
+                      onClick={() => updateParams({ price: price.id, page: '0' })}
                       className="flex items-center gap-3 cursor-pointer group"
                     >
                       <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
-                        priceRange === price.id ? 'border-gray-900 bg-gray-900' : 'border-gray-300 bg-white group-hover:border-gray-400'
+                        urlPrice === price.id ? 'border-gray-900 bg-gray-900' : 'border-gray-300 bg-white group-hover:border-gray-400'
                       }`}>
-                        {priceRange === price.id && <div className="w-2 h-2 bg-white rounded-full" />}
+                        {urlPrice === price.id && <div className="w-2 h-2 bg-white rounded-full" />}
                       </div>
-                      <span className={`text-sm font-medium transition-colors ${priceRange === price.id ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
+                      <span className={`text-sm font-medium transition-colors ${urlPrice === price.id ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
                         {price.label}
                       </span>
                     </label>
@@ -186,8 +194,8 @@ export default function Shop() {
                 <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wider">Sắp xếp theo</h3>
                 <div className="relative">
                   <select 
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
+                    value={urlSort}
+                    onChange={(e) => updateParams({ sort: e.target.value, page: '0' })}
                     className="w-full appearance-none bg-white border border-gray-200 text-gray-900 text-sm font-medium rounded-xl py-3 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-gray-900 cursor-pointer shadow-sm transition-all"
                   >
                     <option value="newest">Mới nhất</option>

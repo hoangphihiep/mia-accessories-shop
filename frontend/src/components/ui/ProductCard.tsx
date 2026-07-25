@@ -16,7 +16,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const price = product.variants && product.variants.length > 0 ? product.variants[0].price : 0;
 
   return (
-    <Link to={`/product/${product.id}`} className="group flex flex-col bg-white rounded-3xl overflow-hidden shadow-[0_2px_20px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 border border-gray-100">
+    <Link to={`/product/${product.slug || product.id}`} className="group flex flex-col bg-white rounded-3xl overflow-hidden shadow-[0_2px_20px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 border border-gray-100">
       {/* Image Box */}
       <div className="relative aspect-[4/5] overflow-hidden bg-gray-50">
         <img 

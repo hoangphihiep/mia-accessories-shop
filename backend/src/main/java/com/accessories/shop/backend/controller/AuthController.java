@@ -7,6 +7,7 @@ import com.accessories.shop.backend.dto.request.RegisterRequest;
 import com.accessories.shop.backend.dto.request.ForgotPasswordRequest;
 import com.accessories.shop.backend.dto.request.ResetPasswordRequest;
 import com.accessories.shop.backend.dto.request.RefreshTokenRequest;
+import com.accessories.shop.backend.dto.request.OAuth2Request;
 import com.accessories.shop.backend.exception.BadRequestException;
 import com.accessories.shop.backend.exception.ResourceNotFoundException;
 import com.accessories.shop.backend.service.AuthService;
@@ -47,6 +48,16 @@ public class AuthController {
     public ResponseEntity<MessageResponse> verifyEmail(@RequestParam("token") String token) {
         authService.verifyEmail(token);
         return ResponseEntity.ok(new MessageResponse("Xác thực email thành công! Bạn có thể đăng nhập ngay bây giờ."));
+    }
+
+    @PostMapping("/oauth2/google")
+    public ResponseEntity<AuthResponse> oauth2Google(@Valid @RequestBody OAuth2Request request) {
+        return ResponseEntity.ok(authService.oauth2Google(request.getToken()));
+    }
+
+    @PostMapping("/oauth2/facebook")
+    public ResponseEntity<AuthResponse> oauth2Facebook(@Valid @RequestBody OAuth2Request request) {
+        return ResponseEntity.ok(authService.oauth2Facebook(request.getToken()));
     }
 
     @PostMapping("/refresh")

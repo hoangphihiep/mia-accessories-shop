@@ -79,6 +79,9 @@ public class Product {
     @Column(name = "updated_by")
     private String updatedBy;
 
+    @org.hibernate.annotations.Formula("(SELECT COALESCE(MIN(v.price), 0) FROM product_variants v WHERE v.product_id = id)")
+    private Double minPrice;
+
     // Một sản phẩm có nhiều Mẫu mã (Variants)
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<ProductVariant> variants;

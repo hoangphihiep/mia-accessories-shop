@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import api from '../services/api';
 
 export default function PaymentResult() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const { clearCart } = useCart();
   const [status, setStatus] = useState<'loading' | 'success' | 'failed' | 'error'>('loading');
   const [message, setMessage] = useState('');
@@ -14,6 +13,13 @@ export default function PaymentResult() {
   useEffect(() => {
     const verifyPayment = async () => {
       try {
+        const method = searchParams.get('method');
+        if (method === 'COD') {
+          setStatus('success');
+          clearCart();
+          return;
+        }
+
         const paramsString = searchParams.toString();
         if (!paramsString) {
           setStatus('error');
@@ -58,9 +64,7 @@ export default function PaymentResult() {
             <h2 className="text-3xl font-black uppercase tracking-tighter text-green-600 mb-2">Thanh toán thành công!</h2>
             <p className="text-gray-600 mb-8">Đơn hàng của bạn đã được ghi nhận. Cảm ơn bạn đã mua sắm tại MIA.</p>
             <div className="flex flex-col gap-3 w-full">
-              <Link to="/track-order" className="w-full py-4 bg-gray-900 text-white font-bold uppercase tracking-widest rounded-xl hover:bg-gray-800 transition-colors">
-                Theo dõi đơn hàng
-              </Link>
+
               <Link to="/" className="w-full py-4 bg-gray-100 text-gray-900 font-bold uppercase tracking-widest rounded-xl hover:bg-gray-200 transition-colors">
                 Trở về trang chủ
               </Link>

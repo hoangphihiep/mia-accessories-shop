@@ -11,7 +11,7 @@ export default function AdminCategories() {
   const [showDrawer, setShowDrawer] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const { showToast } = useToast();
-  
+
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ name: '', slug: '', parentId: '', status: true });
 
@@ -30,7 +30,7 @@ export default function AdminCategories() {
   const buildCategoryTree = (data: any[]) => {
     const lookup: any = {};
     const roots: any[] = [];
-    
+
     // Deep copy and mapping
     data.forEach(cat => {
       lookup[cat.id] = { ...cat, children: [], level: 0 };
@@ -74,7 +74,7 @@ export default function AdminCategories() {
       } else {
         await api.post('/categories', payload);
       }
-      
+
       setShowDrawer(false);
       showToast(editingId ? 'Cập nhật danh mục thành công' : 'Thêm danh mục thành công', 'success');
       fetchCategories();
@@ -112,11 +112,11 @@ export default function AdminCategories() {
   const openDrawer = (category: any = null) => {
     if (category) {
       setEditingId(category.id);
-      setFormData({ 
-        name: category.name, 
-        slug: category.slug, 
+      setFormData({
+        name: category.name,
+        slug: category.slug,
         parentId: category.parentId || '',
-        status: category.status !== false 
+        status: category.status !== false
       });
     } else {
       setEditingId(null);
@@ -132,15 +132,14 @@ export default function AdminCategories() {
   );
 
   return (
-    <div className="relative flex w-full h-[calc(100vh-6rem)] overflow-hidden">
-      
-      <div className="flex-1 flex flex-col bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+    <>
+      <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 h-[calc(100vh-9rem)] flex flex-col overflow-hidden">
         <div className="p-8 border-b border-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/50 backdrop-blur-xl shrink-0">
           <div>
             <h2 className="font-black uppercase tracking-widest text-xl text-gray-900">Quản lý Danh mục</h2>
             <p className="text-gray-400 text-sm mt-1">Tổ chức và phân cấp cấu trúc sản phẩm</p>
           </div>
-          <button 
+          <button
             onClick={() => openDrawer()}
             className="flex items-center justify-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-full text-sm font-bold uppercase tracking-wider hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 transition-all w-full md:w-auto"
           >
@@ -192,7 +191,7 @@ export default function AdminCategories() {
                       )}
                     </button>
                   </td>
-                  <td className="p-5 pr-8 text-right opacity-0 group-hover:opacity-100 transition-opacity space-x-2">
+                  <td className="p-5 pr-8 text-right space-x-2">
                     <button onClick={() => openDrawer(cat)} className="p-2 text-sky-600 hover:bg-sky-50 rounded-lg transition-colors border border-transparent hover:border-sky-100" title="Sửa">
                       <Edit2 size={16} />
                     </button>
@@ -217,17 +216,16 @@ export default function AdminCategories() {
 
       {/* Backdrop Overlay */}
       {showDrawer && (
-        <div 
+        <div
           className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 transition-opacity animate-in fade-in duration-300"
           onClick={() => setShowDrawer(false)}
         />
       )}
 
       {/* Side Drawer */}
-      <div 
-        className={`fixed top-0 right-0 h-screen w-full lg:w-[400px] bg-white shadow-2xl border-l border-gray-100 flex flex-col transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-50 ${
-          showDrawer ? 'translate-x-0' : 'translate-x-[110%]'
-        }`}
+      <div
+        className={`fixed top-0 right-0 bottom-0 w-full lg:w-[400px] bg-white shadow-2xl border-l border-gray-100 flex flex-col transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-50 ${showDrawer ? 'translate-x-0' : 'translate-x-[110%]'
+          }`}
       >
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-3xl shrink-0">
           <div>
@@ -236,7 +234,7 @@ export default function AdminCategories() {
               Thiết lập thông tin
             </p>
           </div>
-          <button 
+          <button
             onClick={() => setShowDrawer(false)}
             className="p-2 bg-white text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all shadow-sm border border-gray-200"
           >
@@ -248,22 +246,22 @@ export default function AdminCategories() {
           <form id="categoryForm" onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Tên danh mục <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 required
                 value={formData.name}
-                onChange={e => setFormData({...formData, name: e.target.value})}
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
                 className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-bold focus:outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
                 placeholder="VD: Dây chuyền bạc"
               />
             </div>
-            
+
             <div>
               <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Đường dẫn (Slug)</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={formData.slug}
-                onChange={e => setFormData({...formData, slug: e.target.value})}
+                onChange={e => setFormData({ ...formData, slug: e.target.value })}
                 className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-medium text-gray-600 focus:outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
                 placeholder="Để trống tự động tạo"
               />
@@ -272,9 +270,9 @@ export default function AdminCategories() {
 
             <div>
               <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Danh mục cha</label>
-              <select 
+              <select
                 value={formData.parentId}
-                onChange={e => setFormData({...formData, parentId: e.target.value})}
+                onChange={e => setFormData({ ...formData, parentId: e.target.value })}
                 className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-bold focus:outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all appearance-none"
               >
                 <option value="">-- Không có (Danh mục gốc) --</option>
@@ -292,9 +290,9 @@ export default function AdminCategories() {
                 <label className="block text-sm font-bold text-gray-900">Hiển thị danh mục</label>
                 <p className="text-[10px] font-medium text-gray-500 mt-0.5">Tắt để ẩn danh mục khỏi cửa hàng</p>
               </div>
-              <button 
+              <button
                 type="button"
-                onClick={() => setFormData({...formData, status: !formData.status})}
+                onClick={() => setFormData({ ...formData, status: !formData.status })}
                 className="focus:outline-none"
               >
                 {formData.status ? (
@@ -308,8 +306,8 @@ export default function AdminCategories() {
         </div>
 
         <div className="p-6 border-t border-gray-100 bg-white rounded-b-3xl shrink-0">
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             form="categoryForm"
             className="w-full py-3.5 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition-all shadow-lg shadow-gray-900/20 flex items-center justify-center gap-2 hover:-translate-y-0.5"
           >
@@ -319,7 +317,7 @@ export default function AdminCategories() {
         </div>
       </div>
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={deleteConfirmId !== null}
         title="Xóa danh mục"
         message="Bạn có chắc chắn muốn xóa danh mục này? Hành động này không thể hoàn tác."
@@ -329,6 +327,6 @@ export default function AdminCategories() {
         }}
         onCancel={() => setDeleteConfirmId(null)}
       />
-    </div>
+    </>
   );
 }

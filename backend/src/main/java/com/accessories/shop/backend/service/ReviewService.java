@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.ArrayList;
 import com.accessories.shop.backend.exception.ResourceNotFoundException;
 
+import java.util.Arrays;
+
 @Service
 @RequiredArgsConstructor
 public class ReviewService {
@@ -22,6 +24,19 @@ public class ReviewService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
+
+    private static final List<String> BAD_WORDS = Arrays.asList(
+        "lừa đảo", "chửi", "đụ", "má", "cặc", "lồn", "buồi", "cứt", "đkm", "vkl", "đcm", "chó"
+    );
+
+    private boolean containsBadWord(String text) {
+        if (text == null) return false;
+        String lower = text.toLowerCase();
+        for (String word : BAD_WORDS) {
+            if (lower.contains(word)) return true;
+        }
+        return false;
+    }
 
     public Review addReview(String email, Long productId, Integer rating, String comment, List<String> images, String variantName) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
@@ -35,6 +50,8 @@ public class ReviewService {
             throw new IllegalArgumentException("Bạn cần mua và nhận được hàng trước khi đánh giá.");
         }
         
+        boolean isClean = !containsBadWord(comment);
+
         Review review = Review.builder()
                 .user(user)
                 .product(product)
@@ -42,7 +59,7 @@ public class ReviewService {
                 .comment(comment)
                 .images(images != null ? images : new ArrayList<>())
                 .variantName(variantName)
-                .isActive(true)
+                .isActive(isClean) // Auto-hide if contains bad words
                 .build();
         Review saved = reviewRepository.save(review);
         updateProductRatingMetrics(product.getId());

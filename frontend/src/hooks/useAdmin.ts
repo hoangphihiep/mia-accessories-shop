@@ -22,6 +22,13 @@ export const useDailyRevenue = () => {
   });
 };
 
+export const useDailyProductSales = () => {
+  return useQuery({
+    queryKey: ['adminDailyProductSales'],
+    queryFn: () => AdminService.getDailyProductSales(),
+  });
+};
+
 export const useTopProducts = () => {
   return useQuery({
     queryKey: ['adminTopProducts'],

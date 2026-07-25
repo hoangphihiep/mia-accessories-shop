@@ -17,7 +17,7 @@ export default function AdminOrders() {
     try {
       const response = await api.get('/admin/orders');
       setOrders(response.data);
-      
+
       // Update selectedOrder if it's currently open
       if (selectedOrder) {
         const updated = response.data.find((o: any) => o.id === selectedOrder.id);
@@ -47,9 +47,9 @@ export default function AdminOrders() {
 
   const filteredOrders = orders.filter(o => {
     const matchTab = activeTab === 'All' || o.status === activeTab;
-    const matchSearch = o.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                        o.customerPhone?.includes(searchTerm) ||
-                        o.id.toString().includes(searchTerm);
+    const matchSearch = o.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.customerPhone?.includes(searchTerm) ||
+      o.id.toString().includes(searchTerm);
     return matchTab && matchSearch;
   });
 
@@ -81,37 +81,34 @@ export default function AdminOrders() {
 
   return (
     <>
-      <div className="print:hidden relative flex w-full h-[calc(100vh-6rem)] overflow-hidden">
-      
-      <div className="flex-1 flex flex-col bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+      <div className="print:hidden bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 h-[calc(100vh-9rem)] flex flex-col overflow-hidden">
         <div className="p-8 border-b border-gray-50 flex flex-col gap-6 bg-white/50 backdrop-blur-xl shrink-0">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 className="font-black uppercase tracking-widest text-xl text-gray-900">Quản lý Đơn hàng</h2>
               <p className="text-gray-400 text-sm mt-1">Theo dõi và xử lý các đơn hàng trên hệ thống</p>
             </div>
-            
+
             <div className="relative flex-1 md:max-w-xs w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input 
-                type="text" 
-                placeholder="Tìm mã đơn, tên, SĐT..." 
+              <input
+                type="text"
+                placeholder="Tìm mã đơn, tên, SĐT..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-gray-900/10 transition-all"
               />
             </div>
           </div>
-          
+
           {/* Tabs */}
           <div className="flex space-x-2 border-b border-gray-100 w-full overflow-x-auto custom-scrollbar">
             {tabs.map(tab => (
-              <button 
+              <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-3 text-[11px] font-black uppercase tracking-[0.2em] transition-all relative ${
-                  activeTab === tab ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50/50 rounded-t-lg'
-                }`}
+                className={`px-6 py-3 text-[11px] font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === tab ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50/50 rounded-t-lg'
+                  }`}
               >
                 {tab === 'All' ? 'TẤT CẢ' : getStatusText(tab)}
                 {activeTab === tab && (
@@ -135,8 +132,8 @@ export default function AdminOrders() {
             </thead>
             <tbody className="text-sm">
               {filteredOrders.map((order) => (
-                <tr 
-                  key={order.id} 
+                <tr
+                  key={order.id}
                   onClick={() => setSelectedOrder(order)}
                   className={`border-b border-gray-50 transition-colors group cursor-pointer
                     ${selectedOrder?.id === order.id ? 'bg-gray-50/80' : 'hover:bg-gray-50/50'}`}
@@ -199,17 +196,16 @@ export default function AdminOrders() {
 
       {/* Backdrop Overlay */}
       {selectedOrder && (
-        <div 
+        <div
           className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 transition-opacity animate-in fade-in duration-300"
           onClick={() => setSelectedOrder(null)}
         />
       )}
 
       {/* Side Drawer */}
-      <div 
-        className={`fixed top-0 right-0 h-screen w-full lg:w-[400px] bg-white shadow-2xl border-l border-gray-100 flex flex-col transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-50 ${
-          selectedOrder ? 'translate-x-0' : 'translate-x-[110%]'
-        }`}
+      <div
+        className={`fixed top-0 right-0 bottom-0 w-full lg:w-[400px] bg-white shadow-2xl border-l border-gray-100 flex flex-col transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-50 ${selectedOrder ? 'translate-x-0' : 'translate-x-[110%]'
+          }`}
       >
         {selectedOrder && (
           <>
@@ -221,7 +217,7 @@ export default function AdminOrders() {
                   {new Date(selectedOrder.createdAt).toLocaleString('vi-VN')}
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setSelectedOrder(null)}
                 className="p-2 bg-white text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all shadow-sm border border-gray-200"
               >
@@ -231,13 +227,13 @@ export default function AdminOrders() {
 
             {/* Drawer Content */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
-              
+
               {/* Status & Actions */}
               <div className="flex items-center justify-between">
                 <span className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest border ${getStatusBadge(selectedOrder.status)}`}>
                   {getStatusText(selectedOrder.status)}
                 </span>
-                
+
                 {selectedOrder.status === 'PENDING' && (
                   <div className="flex gap-2">
                     <button onClick={() => updateStatus(selectedOrder.id, 'SHIPPING')} className="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition-colors">
@@ -334,7 +330,7 @@ export default function AdminOrders() {
                     <span className="font-black text-xl text-primary">{selectedOrder.totalAmount.toLocaleString('vi-VN')}đ</span>
                   </div>
                 </div>
-                
+
                 <div className="mt-4 p-3 bg-gray-50 rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <CreditCard size={16} className="text-gray-500" />
@@ -350,7 +346,7 @@ export default function AdminOrders() {
 
             {/* Drawer Footer */}
             <div className="p-6 border-t border-gray-100 bg-white rounded-b-3xl">
-              <button 
+              <button
                 onClick={() => window.print()}
                 className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-900 font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
               >
@@ -362,7 +358,7 @@ export default function AdminOrders() {
         )}
       </div>
 
-      </div>
+
 
       {/* PRINT UI (Invoice) */}
       {selectedOrder && (

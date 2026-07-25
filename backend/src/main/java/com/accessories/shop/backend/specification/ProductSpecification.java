@@ -20,12 +20,12 @@ public class ProductSpecification {
         };
     }
 
-    public static Specification<Product> hasCategory(String categoryName) {
+    public static Specification<Product> hasCategory(String categorySlug) {
         return (root, query, criteriaBuilder) -> {
-            if (categoryName == null || categoryName.trim().isEmpty() || categoryName.equalsIgnoreCase("All")) {
+            if (categorySlug == null || categorySlug.trim().isEmpty() || categorySlug.equalsIgnoreCase("All") || categorySlug.equalsIgnoreCase("Tất cả")) {
                 return null;
             }
-            return criteriaBuilder.equal(root.join("category", JoinType.LEFT).get("name"), categoryName);
+            return criteriaBuilder.equal(root.join("category", JoinType.LEFT).get("slug"), categorySlug);
         };
     }
 

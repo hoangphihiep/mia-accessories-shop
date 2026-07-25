@@ -32,5 +32,9 @@ export const AdminService = {
   getTopProducts: async () => {
     const response = await api.get('/admin/dashboard/top-products');
     return response.data;
+  },
+  getDailyProductSales: async () => {
+    const response = await api.get('/admin/dashboard/daily-product-sales');
+    return response.data;
   }
 };

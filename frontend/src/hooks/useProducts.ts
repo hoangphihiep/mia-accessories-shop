@@ -19,6 +19,14 @@ export const useProduct = (id: number | string) => {
   });
 };
 
+export const useProductBySlug = (slug: string) => {
+  return useQuery({
+    queryKey: ['product', 'slug', slug],
+    queryFn: () => ProductService.getProductBySlug(slug),
+    enabled: !!slug,
+  });
+};
+
 // Custom Hook lấy sản phẩm nổi bật
 export const useFeaturedProducts = (size: number = 4) => {
   return useQuery({

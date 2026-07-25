@@ -5,7 +5,7 @@ import App from './App.tsx'
 import ErrorBoundary from './components/layout/ErrorBoundary.tsx'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,7 +21,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <App />
+        <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-client-id'}>
+          <App />
+        </GoogleOAuthProvider>
         {/* <ReactQueryDevtools initialIsOpen={false} /> */}
       </QueryClientProvider>
     </ErrorBoundary>

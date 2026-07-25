@@ -12,7 +12,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import Profile from './pages/Profile';
-import OrderTracking from './pages/OrderTracking';
+
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import PaymentResult from './pages/PaymentResult';
@@ -50,14 +50,14 @@ function App() {
               <Route path="collections" element={<Collections />} />
               <Route path="collections/:slug" element={<CollectionDetail />} />
               <Route path="about" element={<About />} />
-              <Route path="product/:id" element={<ProductDetail />} />
+              <Route path="product/:slug" element={<ProductDetail />} />
               <Route path="cart" element={<Cart />} />
               <Route path="checkout" element={<Checkout />} />
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
               <Route path="verify" element={<VerifyEmail />} />
               <Route path="profile" element={<Profile />} />
-              <Route path="track-order" element={<OrderTracking />} />
+
               <Route path="forgot-password" element={<ForgotPassword />} />
               <Route path="reset-password" element={<ResetPassword />} />
               <Route path="payment-result" element={<PaymentResult />} />

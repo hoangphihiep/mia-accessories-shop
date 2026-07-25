@@ -82,6 +82,8 @@ export interface ProductResponse {
   slug: string;
   description: string;
   isActive: boolean;
+  isNew?: boolean;
+  isFeatured?: boolean;
   category: CategoryResponse;
   material: MaterialResponse;
   variants: ProductVariantResponse[];
