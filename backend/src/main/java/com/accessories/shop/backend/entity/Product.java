@@ -12,6 +12,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.math.BigDecimal;
+import com.accessories.shop.backend.enums.ProductionType;
 
 @Entity
 @Table(name = "products")
@@ -48,6 +50,9 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "technical_specifications", columnDefinition = "TEXT")
+    private String technicalSpecifications;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
@@ -62,6 +67,19 @@ public class Product {
 
     @Column(name = "total_reviews", columnDefinition = "INT DEFAULT 0")
     private Integer totalReviews;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "production_type", length = 20)
+    @Builder.Default
+    private ProductionType productionType = ProductionType.IMPORTED;
+
+    @Column(name = "electricity_cost", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal electricityCost = BigDecimal.ZERO;
+
+    @Column(name = "machine_cost", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal machineCost = BigDecimal.ZERO;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, columnDefinition = "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6)")

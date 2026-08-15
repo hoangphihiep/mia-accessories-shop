@@ -3,6 +3,7 @@ package com.accessories.shop.backend.dto.request;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
+import java.util.List;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -25,4 +26,10 @@ public class ProductVariantRequest {
     private String sku;
     private String imageUrl;
     private Long productId;
+    
+    private Double stockQuantity;
+    private Double displayQuantity;
+
+    private Double machineHours;
+    private List<VariantRawMaterialRequest> rawMaterials;
 }

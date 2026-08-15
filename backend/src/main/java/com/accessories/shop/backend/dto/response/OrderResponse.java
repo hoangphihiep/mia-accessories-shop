@@ -2,9 +2,11 @@ package com.accessories.shop.backend.dto.response;
 
 import lombok.Getter;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -22,6 +24,14 @@ public class OrderResponse {
     private String paymentMethod;
     private Boolean isPaid;
     private LocalDateTime createdAt;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate expectedCompletionDate;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate expectedDeliveryDate;
+    
+    private String trackingCode;
     private LocalDateTime updatedAt;
     private List<OrderDetailResponse> orderDetails;
 }

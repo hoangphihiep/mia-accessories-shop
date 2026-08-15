@@ -13,6 +13,10 @@ public class SupplierResponse {
     private String phone;
     private String email;
     private String address;
+    private String cccd;
+    private String taxCode;
+    private String legalRepresentative;
+    private String directContactPerson;
     private BigDecimal debt;
     private LocalDateTime createdAt;
 }

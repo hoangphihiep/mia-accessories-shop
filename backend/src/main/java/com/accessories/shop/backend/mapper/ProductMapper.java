@@ -7,9 +7,10 @@ import com.accessories.shop.backend.dto.response.ProductVariantResponse;
 import com.accessories.shop.backend.entity.Product;
 import com.accessories.shop.backend.entity.ProductImage;
 import com.accessories.shop.backend.entity.ProductVariant;
+import com.accessories.shop.backend.entity.VariantRawMaterial;
+import com.accessories.shop.backend.dto.response.VariantRawMaterialResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring", uses = {CategoryMapper.class, MaterialMapper.class})
 public interface ProductMapper {
@@ -20,16 +21,13 @@ public interface ProductMapper {
     ProductVariantResponse toVariantResponse(ProductVariant variant);
     
     ProductImageResponse toImageResponse(ProductImage image);
+    
+    @Mapping(source = "materialVariant", target = "materialVariant")
+    VariantRawMaterialResponse toVariantRawMaterialResponse(VariantRawMaterial vrm);
 
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "material", ignore = true)
     @Mapping(target = "variants", ignore = true)
     @Mapping(target = "images", ignore = true)
     Product toEntity(ProductRequest request);
-
-    @Mapping(target = "category", ignore = true)
-    @Mapping(target = "material", ignore = true)
-    @Mapping(target = "variants", ignore = true)
-    @Mapping(target = "images", ignore = true)
-    void updateEntityFromRequest(ProductRequest request, @MappingTarget Product product);
 }

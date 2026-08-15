@@ -70,17 +70,46 @@ export default function OrderTracking() {
                   <p><strong>Thanh toán:</strong> {order.paymentMethod} - {order.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}</p>
                 </div>
 
+                {(order.expectedCompletionDate || order.expectedDeliveryDate || order.trackingCode) && (
+                  <div className="mb-4 p-4 bg-amber-50 border border-amber-100 text-sm">
+                    <h4 className="font-bold text-amber-900 mb-2 uppercase tracking-widest text-xs">Tiến độ dự kiến</h4>
+                    {order.expectedCompletionDate && (
+                      <p className="text-amber-800">Dự kiến hoàn thành: <span className="font-bold">{new Date(order.expectedCompletionDate).toLocaleDateString('vi-VN')}</span></p>
+                    )}
+                    {order.expectedDeliveryDate && (
+                      <p className="text-amber-800">Dự kiến giao hàng: <span className="font-bold">{new Date(order.expectedDeliveryDate).toLocaleDateString('vi-VN')}</span></p>
+                    )}
+                    {order.trackingCode && (
+                      <div className="text-amber-800 mt-2 pt-2 border-t border-amber-200/50 flex justify-between">
+                        <span>Mã vận đơn:</span>
+                        <span className="font-black tracking-wider">{order.trackingCode}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   {order.orderDetails?.map((detail: any) => (
                     <div key={detail.id} className="flex justify-between text-sm">
-                      <span>{detail.quantity}x {detail.productVariant?.name || 'Sản phẩm'}</span>
+                      <span>{detail.quantity}x {detail.productVariant?.productName || 'Sản phẩm'} - {detail.productVariant?.name || 'Phân loại'}</span>
                       <span className="text-gray-500">{(detail.price * detail.quantity).toLocaleString('vi-VN')}đ</span>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between font-bold text-lg">
-                  <span>Tổng cộng</span>
-                  <span>{order.totalAmount.toLocaleString('vi-VN')}đ</span>
+                
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex justify-between text-sm text-gray-500 mb-2">
+                    <span>Tạm tính (Tiền hàng)</span>
+                    <span>{(order.totalAmount - (order.shippingFee || 0)).toLocaleString('vi-VN')}đ</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500 mb-3">
+                    <span>Phí vận chuyển</span>
+                    <span>{(order.shippingFee || 0).toLocaleString('vi-VN')}đ</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-lg border-t border-dashed border-gray-200 pt-3">
+                    <span>Tổng cộng</span>
+                    <span className="text-primary">{order.totalAmount.toLocaleString('vi-VN')}đ</span>
+                  </div>
                 </div>
               </div>
             ))}

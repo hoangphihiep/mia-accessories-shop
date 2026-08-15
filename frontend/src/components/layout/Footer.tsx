@@ -10,6 +10,12 @@ export default function Footer() {
           <p className="text-gray-400 text-sm leading-relaxed mb-6">
             Phụ kiện cao cấp dành cho phong cách hiện đại. Được chế tác thủ công với sự tỉ mỉ và đam mê mãnh liệt.
           </p>
+          <div className="text-sm text-gray-400 mt-4 space-y-2 border-t border-gray-800 pt-6">
+            <p><span className="font-bold text-gray-200 uppercase tracking-wider text-xs">Giờ làm việc:</span></p>
+            <p>08:00 - 22:00 (Tất cả các ngày)</p>
+            <p className="mt-4"><span className="font-bold text-gray-200 uppercase tracking-wider text-xs">Hotline:</span></p>
+            <p className="text-white font-bold">1900 1234</p>
+          </div>
         </div>
         
         <div>
@@ -50,10 +56,12 @@ export default function Footer() {
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20 pt-8 border-t border-gray-900 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm gap-4">
         <p>&copy; {new Date().getFullYear()} MIA Accessories Shop. All rights reserved.</p>
-        <div className="flex space-x-6">
-          <a href="#" className="hover:text-white transition-colors">Instagram</a>
-          <a href="#" className="hover:text-white transition-colors">Facebook</a>
-          <a href="#" className="hover:text-white transition-colors">TikTok</a>
+        <div className="flex flex-wrap gap-6 mt-4 md:mt-0 justify-center">
+          <a href="#" className="hover:text-white transition-colors uppercase tracking-widest text-xs font-bold">Instagram</a>
+          <a href="#" className="hover:text-white transition-colors uppercase tracking-widest text-xs font-bold">Threads</a>
+          <a href="#" className="hover:text-white transition-colors uppercase tracking-widest text-xs font-bold">Facebook</a>
+          <a href="#" className="hover:text-white transition-colors uppercase tracking-widest text-xs font-bold">TikTok</a>
+          <a href="#" className="hover:text-white transition-colors uppercase tracking-widest text-xs font-bold">Zalo</a>
         </div>
       </div>
     </footer>

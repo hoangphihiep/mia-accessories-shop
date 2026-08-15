@@ -1,15 +1,9 @@
 package com.accessories.shop.backend.service;
 
 import com.accessories.shop.backend.dto.request.ProductVariantRequest;
-import com.accessories.shop.backend.entity.Category;
-import com.accessories.shop.backend.entity.Material;
-import com.accessories.shop.backend.entity.Product;
-import com.accessories.shop.backend.entity.ProductImage;
-import com.accessories.shop.backend.entity.ProductVariant;
+import com.accessories.shop.backend.entity.*;
 import com.accessories.shop.backend.exception.ResourceNotFoundException;
-import com.accessories.shop.backend.repository.CategoryRepository;
-import com.accessories.shop.backend.repository.MaterialRepository;
-import com.accessories.shop.backend.repository.ProductRepository;
+import com.accessories.shop.backend.repository.*;
 import com.accessories.shop.backend.specification.ProductSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -24,6 +18,8 @@ import java.text.Normalizer;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import com.accessories.shop.backend.enums.ProductionType;
+import com.accessories.shop.backend.dto.request.VariantRawMaterialRequest;
 import java.util.regex.Pattern;
 
 @Service
@@ -33,12 +29,22 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final MaterialRepository materialRepository;
+    private final ProductVariantRepository productVariantRepository;
+
+    @Cacheable(value = "max_price")
+    public java.math.BigDecimal getMaxPrice() {
+        java.math.BigDecimal max = productVariantRepository.findMaxPrice();
+        return max != null ? max : new java.math.BigDecimal("2000000");
+    }
 
     @Cacheable(value = "products")
-    public Page<Product> getAllProducts(String search, String category, Double minPrice, Double maxPrice, Boolean isFeatured, Pageable pageable) {
-        Specification<Product> spec = Specification.where(ProductSpecification.isActive())
-                .and(ProductSpecification.hasSearchKeyword(search))
-                .and(ProductSpecification.hasCategory(category))
+    public Page<Product> getAllProducts(String search, String category, Double minPrice, Double maxPrice, Boolean isFeatured, Boolean includeInactive, Pageable pageable) {
+        Specification<Product> spec = Specification.where(ProductSpecification.hasSearchKeyword(search));
+        
+        if (includeInactive == null || !includeInactive) {
+            spec = spec.and(ProductSpecification.isActive());
+        }
+        spec = spec.and(ProductSpecification.hasCategory(category))
                 .and(ProductSpecification.hasPriceBetween(minPrice, maxPrice))
                 .and(ProductSpecification.hasIsFeatured(isFeatured));
                 
@@ -85,37 +91,15 @@ public class ProductService {
         if (variantRequests != null && !variantRequests.isEmpty()) {
             Set<ProductVariant> variants = new HashSet<>();
             for (ProductVariantRequest vReq : variantRequests) {
-                ProductVariant variant = ProductVariant.builder()
-                        .product(savedProduct)
-                        .name(vReq.getName())
-                        .sku(vReq.getSku())
-                        .price(vReq.getPrice())
-                        .compareAtPrice(vReq.getCompareAtPrice())
-                        .imageUrl(vReq.getImageUrl())
-                        .stockQuantity(0) // Luôn luôn bằng 0 khi tạo mới
-                        .costPrice(BigDecimal.ZERO) // Giá vốn bằng 0
-                        .isActive(true)
-                        .build();
+                ProductVariant variant = createVariantFromRequest(savedProduct, vReq);
+                calculateProductionCost(savedProduct, variant, vReq.getRawMaterials(), false);
+
                 variants.add(variant);
             }
             savedProduct.setVariants(variants);
         }
 
-        if (images != null && !images.isEmpty()) {
-            Set<ProductImage> productImages = new HashSet<>();
-            for (int i = 0; i < images.size(); i++) {
-                String imgUrl = images.get(i);
-                if (imgUrl != null && !imgUrl.trim().isEmpty()) {
-                    ProductImage img = ProductImage.builder()
-                            .product(savedProduct)
-                            .imageUrl(imgUrl)
-                            .isPrimary(i == 0) // First image is primary
-                            .build();
-                    productImages.add(img);
-                }
-            }
-            savedProduct.setImages(productImages);
-        }
+        processImages(savedProduct, images);
 
         return productRepository.save(savedProduct);
     }
@@ -166,21 +150,17 @@ public class ProductService {
                                 v.setCompareAtPrice(vReq.getCompareAtPrice());
                                 v.setImageUrl(vReq.getImageUrl());
                                 v.setIsActive(true);
+                                v.setMachineHours(vReq.getMachineHours() != null ? vReq.getMachineHours() : 0.0);
+                                v.setDisplayQuantity(vReq.getDisplayQuantity() != null ? vReq.getDisplayQuantity() : v.getStockQuantity());
+                                
+                                calculateProductionCost(product, v, vReq.getRawMaterials(), true);
                                 // Tuyệt đối KHÔNG cập nhật stockQuantity và costPrice ở đây
                             });
                 } else {
                     // Tạo variant mới
-                    ProductVariant newVariant = ProductVariant.builder()
-                            .product(product)
-                            .name(vReq.getName())
-                            .sku(vReq.getSku())
-                            .price(vReq.getPrice())
-                            .compareAtPrice(vReq.getCompareAtPrice())
-                            .imageUrl(vReq.getImageUrl())
-                            .stockQuantity(0)
-                            .costPrice(BigDecimal.ZERO)
-                            .isActive(true)
-                            .build();
+                    ProductVariant newVariant = createVariantFromRequest(product, vReq);
+                    calculateProductionCost(product, newVariant, vReq.getRawMaterials(), false);
+
                     existingVariants.add(newVariant);
                 }
             }
@@ -193,13 +173,25 @@ public class ProductService {
             }
         }
 
+        processImages(product, images);
+
+        return productRepository.save(product);
+    }
+
+    @CacheEvict(value = "products", allEntries = true)
+    public void deleteProduct(Long id) {
+        Product product = getProductById(id);
+        productRepository.delete(product);
+    }
+
+    private void processImages(Product product, List<String> images) {
         if (images != null) {
             Set<ProductImage> existingImages = product.getImages();
             if (existingImages == null) {
                 existingImages = new HashSet<>();
                 product.setImages(existingImages);
             }
-            existingImages.clear(); // Requires orphanRemoval = true in Product entity
+            existingImages.clear();
             for (int i = 0; i < images.size(); i++) {
                 String imgUrl = images.get(i);
                 if (imgUrl != null && !imgUrl.trim().isEmpty()) {
@@ -212,14 +204,56 @@ public class ProductService {
                 }
             }
         }
-
-        return productRepository.save(product);
     }
 
-    @CacheEvict(value = "products", allEntries = true)
-    public void deleteProduct(Long id) {
-        Product product = getProductById(id);
-        productRepository.delete(product);
+    private void calculateProductionCost(Product product, ProductVariant variant, List<VariantRawMaterialRequest> rawMaterialRequests, boolean isExisting) {
+        if (product.getProductionType() == ProductionType.MANUFACTURED) {
+            BigDecimal electricityCost = product.getElectricityCost() != null ? product.getElectricityCost() : BigDecimal.ZERO;
+            BigDecimal machineCost = product.getMachineCost() != null ? product.getMachineCost() : BigDecimal.ZERO;
+            
+            BigDecimal depreciationCost = machineCost.divide(BigDecimal.valueOf(3000), 10, java.math.RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(variant.getMachineHours()));
+            
+            variant.setDepreciationCost(depreciationCost);
+            variant.setProductionCost(electricityCost.add(depreciationCost));
+            
+            variant.setCostPrice(electricityCost.add(depreciationCost));
+            
+            if (variant.getRawMaterials() == null) {
+                variant.setRawMaterials(new HashSet<>());
+            } else if (isExisting) {
+                variant.getRawMaterials().clear();
+            }
+            
+            if (rawMaterialRequests != null && !rawMaterialRequests.isEmpty()) {
+                for (VariantRawMaterialRequest rmReq : rawMaterialRequests) {
+                    ProductVariant materialVariant = productVariantRepository.findById(rmReq.getMaterialVariantId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mẫu mã thành phần với ID: " + rmReq.getMaterialVariantId()));
+                    VariantRawMaterial vrm = VariantRawMaterial.builder()
+                            .productVariant(variant)
+                            .materialVariant(materialVariant)
+                            .quantity(rmReq.getQuantity())
+                            .build();
+                    variant.getRawMaterials().add(vrm);
+                }
+            }
+        }
+    }
+
+    private ProductVariant createVariantFromRequest(Product product, ProductVariantRequest vReq) {
+        return ProductVariant.builder()
+                .product(product)
+                .name(vReq.getName())
+                .sku(vReq.getSku())
+                .price(vReq.getPrice())
+                .compareAtPrice(vReq.getCompareAtPrice())
+                .imageUrl(vReq.getImageUrl())
+                .stockQuantity(vReq.getStockQuantity() != null ? vReq.getStockQuantity() : 0)
+                .displayQuantity(vReq.getDisplayQuantity() != null ? vReq.getDisplayQuantity() : (vReq.getStockQuantity() != null ? vReq.getStockQuantity() : 0.0))
+                .costPrice(BigDecimal.ZERO)
+                .isActive(true)
+                .machineHours(vReq.getMachineHours() != null ? vReq.getMachineHours() : 0.0)
+                .build();
     }
 
     private String generateSlug(String input) {

@@ -14,6 +14,10 @@ public class SupplierMapper {
                 .phone(request.getPhone())
                 .email(request.getEmail())
                 .address(request.getAddress())
+                .cccd(request.getCccd())
+                .taxCode(request.getTaxCode())
+                .legalRepresentative(request.getLegalRepresentative())
+                .directContactPerson(request.getDirectContactPerson())
                 .build();
     }
 
@@ -27,6 +31,10 @@ public class SupplierMapper {
                 .phone(entity.getPhone())
                 .email(entity.getEmail())
                 .address(entity.getAddress())
+                .cccd(entity.getCccd())
+                .taxCode(entity.getTaxCode())
+                .legalRepresentative(entity.getLegalRepresentative())
+                .directContactPerson(entity.getDirectContactPerson())
                 .debt(entity.getDebt())
                 .createdAt(entity.getCreatedAt())
                 .build();

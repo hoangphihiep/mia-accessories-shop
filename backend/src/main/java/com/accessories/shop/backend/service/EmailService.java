@@ -5,8 +5,10 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailService {
@@ -37,9 +39,8 @@ public class EmailService {
 
             mailSender.send(message);
         } catch (MessagingException e) {
-            System.err.println("Failed to send email to " + to);
-            e.printStackTrace();
-            throw new RuntimeException("Lỗi hệ thống khi gửi email khôi phục mật khẩu.");
+            log.error("Failed to send email to {}", to, e);
+            throw new RuntimeException("Lỗi hệ thống khi gửi email khôi phục mật khẩu.", e);
         }
     }
 }

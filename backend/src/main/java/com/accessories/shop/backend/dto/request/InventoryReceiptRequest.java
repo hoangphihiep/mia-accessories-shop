@@ -11,9 +11,9 @@ import java.util.List;
 
 @Data
 public class InventoryReceiptRequest {
-
-    @NotNull(message = "Vui lòng chọn nhà cung cấp")
     private Long supplierId;
+
+    private String type = "IMPORTED"; // "IMPORTED" or "MANUFACTURED"
 
     @NotEmpty(message = "Phiếu nhập phải có ít nhất 1 sản phẩm")
     @Valid
@@ -26,7 +26,7 @@ public class InventoryReceiptRequest {
 
         @NotNull(message = "Số lượng không được để trống")
         @Min(value = 1, message = "Số lượng nhập phải lớn hơn 0")
-        private Integer quantity;
+        private Double quantity;
 
         @NotNull(message = "Đơn giá không được để trống")
         @Min(value = 0, message = "Đơn giá không được nhỏ hơn 0")

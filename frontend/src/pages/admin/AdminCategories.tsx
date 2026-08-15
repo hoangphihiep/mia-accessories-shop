@@ -13,7 +13,30 @@ export default function AdminCategories() {
   const { showToast } = useToast();
 
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ name: '', slug: '', parentId: '', status: true });
+  const [formData, setFormData] = useState({ name: '', slug: '', description: '', parentId: '', status: true });
+
+  const generateSlug = (text: string) => {
+    return text.toString().toLowerCase()
+      .replace(/đ/g, 'd')
+      .replace(/[áàảãạâấầẩẫậăắằẳẵặ]/g, 'a')
+      .replace(/[éèẻẽẹêếềểễệ]/g, 'e')
+      .replace(/[íìỉĩị]/g, 'i')
+      .replace(/[óòỏõọôốồổỗộơớờởỡợ]/g, 'o')
+      .replace(/[úùủũụưứừửữự]/g, 'u')
+      .replace(/[ýỳỷỹỵ]/g, 'y')
+      .replace(/[^a-z0-9 -]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      name: newName,
+      slug: editingId ? prev.slug : generateSlug(newName)
+    }));
+  };
 
   const fetchCategories = async () => {
     try {
@@ -64,7 +87,8 @@ export default function AdminCategories() {
     try {
       const payload = {
         name: formData.name,
-        slug: formData.slug || '',
+        slug: formData.slug || generateSlug(formData.name),
+        description: formData.description || '',
         parentId: formData.parentId ? parseInt(formData.parentId) : null,
         status: formData.status
       };
@@ -115,12 +139,13 @@ export default function AdminCategories() {
       setFormData({
         name: category.name,
         slug: category.slug,
+        description: category.description || '',
         parentId: category.parentId || '',
         status: category.status !== false
       });
     } else {
       setEditingId(null);
-      setFormData({ name: '', slug: '', parentId: '', status: true });
+      setFormData({ name: '', slug: '', description: '', parentId: '', status: true });
     }
     setShowDrawer(true);
   };
@@ -250,10 +275,20 @@ export default function AdminCategories() {
                 type="text"
                 required
                 value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                onChange={handleNameChange}
                 className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-bold focus:outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
                 placeholder="VD: Dây chuyền bạc"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Mô tả</label>
+              <textarea
+                value={formData.description}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-medium text-gray-600 focus:outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all resize-none h-24"
+                placeholder="Mô tả ngắn gọn về danh mục này"
+              ></textarea>
             </div>
 
             <div>

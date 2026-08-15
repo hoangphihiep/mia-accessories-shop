@@ -11,6 +11,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
 @Table(name = "product_variants")
@@ -50,13 +51,31 @@ public class ProductVariant {
     private BigDecimal compareAtPrice; // Giá niêm yết (Gạch ngang)
 
     @Column(name = "stock_quantity", nullable = false)
-    private Integer stockQuantity; // Số lượng tồn kho
+    private Double stockQuantity; // Số lượng tồn kho
+
+    @Column(name = "display_quantity")
+    private Double displayQuantity; // Số lượng ảo hiển thị trên web
 
     @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl; // Ảnh đại diện riêng cho mẫu này (nếu có)
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
+
+    @Column(name = "machine_hours")
+    @Builder.Default
+    private Double machineHours = 0.0;
+
+    @Column(name = "depreciation_cost", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal depreciationCost = BigDecimal.ZERO;
+
+    @Column(name = "production_cost", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal productionCost = BigDecimal.ZERO;
+
+    @OneToMany(mappedBy = "productVariant", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private Set<VariantRawMaterial> rawMaterials;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, columnDefinition = "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6)")

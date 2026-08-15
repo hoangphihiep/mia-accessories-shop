@@ -27,7 +27,7 @@ public class OrderDetail {
     private ProductVariant productVariant;
 
     @Column(nullable = false)
-    private Integer quantity;
+    private Double quantity;
 
     // GIÁ CHỐT ĐƠN: Lưu lại giá bán của Mẫu đó tại thời điểm mua
     @Column(nullable = false, precision = 10, scale = 2)

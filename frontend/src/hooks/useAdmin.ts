@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { AdminService } from '../services/admin.service';
 
-export const useDashboardStats = () => {
+export const useDashboardStats = (timeRange: string = 'thisMonth', startDate?: string, endDate?: string) => {
   return useQuery({
-    queryKey: ['adminDashboardStats'],
-    queryFn: () => AdminService.getDashboardStats(),
+    queryKey: ['adminDashboardStats', timeRange, startDate, endDate],
+    queryFn: () => AdminService.getDashboardStats(timeRange, startDate, endDate),
   });
 };
 
@@ -15,24 +15,31 @@ export const useRecentOrders = () => {
   });
 };
 
-export const useDailyRevenue = () => {
+export const useDailyRevenue = (timeRange: string = 'thisMonth', startDate?: string, endDate?: string) => {
   return useQuery({
-    queryKey: ['adminDailyRevenue'],
-    queryFn: () => AdminService.getDailyRevenue(),
+    queryKey: ['adminDailyRevenue', timeRange, startDate, endDate],
+    queryFn: () => AdminService.getDailyRevenue(timeRange, startDate, endDate),
   });
 };
 
-export const useDailyProductSales = () => {
+export const useDailyProductSales = (timeRange: string = 'thisMonth', startDate?: string, endDate?: string) => {
   return useQuery({
-    queryKey: ['adminDailyProductSales'],
-    queryFn: () => AdminService.getDailyProductSales(),
+    queryKey: ['adminDailyProductSales', timeRange, startDate, endDate],
+    queryFn: () => AdminService.getDailyProductSales(timeRange, startDate, endDate),
   });
 };
 
-export const useTopProducts = () => {
+export const useTopProducts = (timeRange: string = 'thisMonth', startDate?: string, endDate?: string) => {
   return useQuery({
-    queryKey: ['adminTopProducts'],
-    queryFn: () => AdminService.getTopProducts(),
+    queryKey: ['adminTopProducts', timeRange, startDate, endDate],
+    queryFn: () => AdminService.getTopProducts(timeRange, startDate, endDate),
+  });
+};
+
+export const useProductStats = (timeRange: string = 'thisMonth', startDate?: string, endDate?: string) => {
+  return useQuery({
+    queryKey: ['adminProductStats', timeRange, startDate, endDate],
+    queryFn: () => AdminService.getProductStats(timeRange, startDate, endDate),
   });
 };
 

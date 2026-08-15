@@ -28,7 +28,7 @@ public class InventoryReceiptDetail {
     @JoinColumn(name = "product_variant_id", nullable = false)
     private ProductVariant productVariant;
 
-    private Integer quantity;
+    private Double quantity;
 
     private BigDecimal unitPrice;
 }

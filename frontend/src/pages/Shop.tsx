@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Filter, Search, X, SlidersHorizontal, ChevronRight } from 'lucide-react';
-import { useProducts } from '../hooks/useProducts';
+import { useProducts, useMaxPrice } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import ProductCard from '../components/ui/ProductCard';
 import Pagination from '../components/ui/Pagination';
@@ -12,17 +12,29 @@ export default function Shop() {
   // Read URL Params
   const urlSearch = searchParams.get('search') || '';
   const urlCategory = searchParams.get('category') || 'All';
-  const urlPrice = searchParams.get('price') || 'All';
+  const urlMinPrice = searchParams.get('minPrice') || '';
+  const urlMaxPrice = searchParams.get('maxPrice') || '';
   const urlSort = searchParams.get('sort') || 'newest';
   const page = parseInt(searchParams.get('page') || '0', 10);
 
-  // Local state for debouncing search input only
-  const [localSearch, setLocalSearch] = useState(urlSearch);
+  // Fetch dynamic max price from backend
+  const { data: fetchedMaxPrice } = useMaxPrice();
+  const maxLimit = fetchedMaxPrice || 2000000;
 
-  // Sync back to localSearch if URL changes externally
+  // Local state for debouncing
+  const [localSearch, setLocalSearch] = useState(urlSearch);
+  const [localMinPrice, setLocalMinPrice] = useState(urlMinPrice ? parseInt(urlMinPrice) : 0);
+  const [localMaxPrice, setLocalMaxPrice] = useState(urlMaxPrice ? parseInt(urlMaxPrice) : maxLimit);
+
+  // Sync back to local state if URL changes externally or maxLimit loads
   useEffect(() => {
     setLocalSearch(urlSearch);
   }, [urlSearch]);
+
+  useEffect(() => {
+    setLocalMinPrice(urlMinPrice ? parseInt(urlMinPrice) : 0);
+    setLocalMaxPrice(urlMaxPrice ? parseInt(urlMaxPrice) : maxLimit);
+  }, [urlMinPrice, urlMaxPrice, maxLimit]);
 
   // Debounce logic for search
   useEffect(() => {
@@ -33,6 +45,26 @@ export default function Shop() {
     }, 500);
     return () => clearTimeout(timer);
   }, [localSearch]);
+
+  // Debounce logic for price slider
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localMinPrice !== (urlMinPrice ? parseInt(urlMinPrice) : 0) || 
+          localMaxPrice !== (urlMaxPrice ? parseInt(urlMaxPrice) : maxLimit)) {
+        
+        const newParams: Record<string, string> = { page: '0' };
+        
+        if (localMinPrice > 0) newParams.minPrice = localMinPrice.toString();
+        else newParams.minPrice = ''; // clear from URL
+        
+        if (localMaxPrice < maxLimit) newParams.maxPrice = localMaxPrice.toString();
+        else newParams.maxPrice = ''; // clear from URL
+        
+        updateParams(newParams);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [localMinPrice, localMaxPrice]);
 
   // Helper to update URL params
   const updateParams = (newParams: Record<string, string>) => {
@@ -56,15 +88,8 @@ export default function Shop() {
   
   if (urlSearch) queryParams.search = urlSearch;
   if (urlCategory !== 'All') queryParams.category = urlCategory;
-  
-  if (urlPrice !== 'All') {
-    if (urlPrice === 'under-300') queryParams.maxPrice = 299999;
-    if (urlPrice === '300-500') {
-      queryParams.minPrice = 300000;
-      queryParams.maxPrice = 500000;
-    }
-    if (urlPrice === 'over-500') queryParams.minPrice = 500001;
-  }
+  if (urlMinPrice) queryParams.minPrice = parseInt(urlMinPrice, 10);
+  if (urlMaxPrice) queryParams.maxPrice = parseInt(urlMaxPrice, 10);
   
   if (urlSort === 'newest') queryParams.sort = 'createdAt,desc';
   if (urlSort === 'price-asc') queryParams.sort = 'minPrice,asc';
@@ -76,15 +101,45 @@ export default function Shop() {
   const totalElements = productData?.totalElements || 0;
 
   const { data: categoryData } = useCategories();
-  // Ensure we have { id, name, slug }
-  const categories = [{ id: 'All', name: 'Tất cả', slug: 'All' }, ...(categoryData || [])];
+  
+  const orderedCategories = useMemo(() => {
+    const allOpt = { id: 'All', name: 'Tất cả', slug: 'All', depth: 0 };
+    if (!categoryData) return [allOpt];
+    
+    const result: any[] = [allOpt];
+    
+    // Đệ quy để xếp danh mục theo N cấp
+    const buildTree = (parentId: number | null | undefined, depth: number) => {
+      const children = categoryData.filter(c => c.parentId === parentId || (!c.parentId && !parentId));
+      children.forEach(child => {
+        result.push({ ...child, depth });
+        buildTree(child.id, depth + 1);
+      });
+    };
+    
+    buildTree(null, 0); // Bắt đầu từ danh mục gốc
+    buildTree(undefined, 0); // Dự phòng nếu parentId là undefined thay vì null
+    
+    // Lọc lại kết quả để loại bỏ trùng lặp (nếu null và undefined bị trùng)
+    const uniqueResult = Array.from(new Map(result.map(item => [item.id, item])).values());
+    
+    // Đưa vào những danh mục bị mồ côi (nếu có lỗi dữ liệu)
+    const processedIds = new Set(uniqueResult.map(r => r.id));
+    categoryData.forEach(c => {
+      if (!processedIds.has(c.id)) {
+        uniqueResult.push({ ...c, depth: 0 });
+      }
+    });
+    
+    return uniqueResult;
+  }, [categoryData]);
 
   const clearFilters = () => {
     setSearchParams({});
     setLocalSearch('');
   };
 
-  const hasActiveFilters = urlCategory !== 'All' || urlPrice !== 'All' || urlSort !== 'newest' || urlSearch !== '';
+  const hasActiveFilters = urlCategory !== 'All' || urlMinPrice !== '' || urlMaxPrice !== '' || urlSort !== 'newest' || urlSearch !== '';
 
   const setPage = (newPage: number) => {
     updateParams({ page: newPage.toString() });
@@ -144,18 +199,19 @@ export default function Shop() {
               <div className="mb-8">
                 <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wider">Danh mục</h3>
                 <div className="flex flex-col gap-2">
-                  {categories.map(cat => (
+                  {orderedCategories.map(cat => (
                     <button 
                       key={cat.id}
                       onClick={() => updateParams({ category: cat.slug === 'All' ? 'All' : cat.slug, page: '0' })}
-                      className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                      className={`flex items-center justify-between py-2 rounded-xl text-sm transition-all ${
                         (urlCategory === cat.slug || (urlCategory === 'All' && cat.slug === 'All'))
-                          ? 'bg-gray-900 text-white shadow-md' 
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                      }`}
+                          ? 'bg-gray-900 text-white shadow-md font-bold pr-3' 
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 font-medium pr-3'
+                      } ${cat.depth > 0 ? 'text-[13px] border-l-2 border-gray-200 rounded-l-none' : ''}`}
+                      style={{ paddingLeft: cat.depth > 0 ? `${cat.depth * 16 + 12}px` : '12px' }}
                     >
-                      <span>{cat.name}</span>
-                      {(urlCategory === cat.slug || (urlCategory === 'All' && cat.slug === 'All')) && <ChevronRight size={14} className="opacity-70" />}
+                      <span className="text-left">{cat.name}</span>
+                      {(urlCategory === cat.slug || (urlCategory === 'All' && cat.slug === 'All')) && <ChevronRight size={14} className="opacity-70 flex-shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -163,29 +219,57 @@ export default function Shop() {
 
               {/* Price Range */}
               <div className="mb-8">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wider">Mức giá</h3>
-                <div className="flex flex-col gap-3">
-                  {[
-                    { id: 'All', label: 'Tất cả mức giá' },
-                    { id: 'under-300', label: 'Dưới 300.000₫' },
-                    { id: '300-500', label: '300.000₫ - 500.000₫' },
-                    { id: 'over-500', label: 'Trên 500.000₫' },
-                  ].map(price => (
-                    <label 
-                      key={price.id} 
-                      onClick={() => updateParams({ price: price.id, page: '0' })}
-                      className="flex items-center gap-3 cursor-pointer group"
-                    >
-                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
-                        urlPrice === price.id ? 'border-gray-900 bg-gray-900' : 'border-gray-300 bg-white group-hover:border-gray-400'
-                      }`}>
-                        {urlPrice === price.id && <div className="w-2 h-2 bg-white rounded-full" />}
-                      </div>
-                      <span className={`text-sm font-medium transition-colors ${urlPrice === price.id ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                        {price.label}
-                      </span>
-                    </label>
-                  ))}
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Mức giá</h3>
+                  <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+                    {localMinPrice === 0 && localMaxPrice === maxLimit ? 'Tất cả' : 'Tùy chỉnh'}
+                  </span>
+                </div>
+                
+                <div className="px-2">
+                  <div className="relative h-2 bg-gray-200 rounded-full mb-6">
+                    <div 
+                      className="absolute h-full bg-gray-900 rounded-full" 
+                      style={{ 
+                        left: `${(localMinPrice / maxLimit) * 100}%`, 
+                        right: `${100 - (localMaxPrice / maxLimit) * 100}%` 
+                      }}
+                    />
+                    <input
+                      type="range"
+                      min={0}
+                      max={maxLimit}
+                      step={50000}
+                      value={localMinPrice}
+                      onChange={(e) => {
+                        const val = Math.min(Number(e.target.value), localMaxPrice - 50000);
+                        setLocalMinPrice(val);
+                      }}
+                      className="absolute w-full -top-1.5 h-5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:rounded-full cursor-pointer [&::-webkit-slider-thumb]:shadow-md"
+                    />
+                    <input
+                      type="range"
+                      min={0}
+                      max={maxLimit}
+                      step={50000}
+                      value={localMaxPrice}
+                      onChange={(e) => {
+                        const val = Math.max(Number(e.target.value), localMinPrice + 50000);
+                        setLocalMaxPrice(val);
+                      }}
+                      className="absolute w-full -top-1.5 h-5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:rounded-full cursor-pointer [&::-webkit-slider-thumb]:shadow-md"
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs">
+                    <div className="bg-gray-50 border border-gray-200 px-1 py-1.5 rounded-lg text-gray-700 font-bold flex-1 text-center">
+                      {localMinPrice.toLocaleString('vi-VN')}đ
+                    </div>
+                    <span className="text-gray-400 font-bold mx-2">-</span>
+                    <div className="bg-gray-50 border border-gray-200 px-1 py-1.5 rounded-lg text-gray-700 font-bold flex-1 text-center">
+                      {`${localMaxPrice.toLocaleString('vi-VN')}đ`}
+                    </div>
+                  </div>
                 </div>
               </div>
 

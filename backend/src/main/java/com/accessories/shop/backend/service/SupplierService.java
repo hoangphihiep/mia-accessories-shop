@@ -43,6 +43,10 @@ public class SupplierService {
         supplier.setPhone(supplierDetails.getPhone());
         supplier.setEmail(supplierDetails.getEmail());
         supplier.setAddress(supplierDetails.getAddress());
+        supplier.setCccd(supplierDetails.getCccd());
+        supplier.setTaxCode(supplierDetails.getTaxCode());
+        supplier.setLegalRepresentative(supplierDetails.getLegalRepresentative());
+        supplier.setDirectContactPerson(supplierDetails.getDirectContactPerson());
         
         return supplierRepository.save(supplier);
     }

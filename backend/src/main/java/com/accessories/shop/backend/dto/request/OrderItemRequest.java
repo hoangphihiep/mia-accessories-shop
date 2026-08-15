@@ -9,5 +9,5 @@ import lombok.*;
 @Builder
 public class OrderItemRequest {
     private Long variantId; // Mua mẫu nào
-    private Integer quantity; // Số lượng bao nhiêu
+    private Double quantity; // Số lượng bao nhiêu
 }

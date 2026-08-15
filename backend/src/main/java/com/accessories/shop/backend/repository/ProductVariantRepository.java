@@ -10,13 +10,16 @@ import org.springframework.data.repository.query.Param;
 
 @Repository
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, Long> {
-    long countByStockQuantityLessThan(Integer quantity);
+    long countByStockQuantityLessThan(Double quantity);
     
     @Modifying
     @Query("UPDATE ProductVariant p SET p.stockQuantity = p.stockQuantity - :quantity WHERE p.id = :id AND p.stockQuantity >= :quantity")
-    int decreaseStock(@Param("id") Long id, @Param("quantity") int quantity);
+    int decreaseStock(@Param("id") Long id, @Param("quantity") double quantity);
 
     @Modifying
     @Query("UPDATE ProductVariant p SET p.stockQuantity = p.stockQuantity + :quantity WHERE p.id = :id")
-    int increaseStock(@Param("id") Long id, @Param("quantity") int quantity);
+    int increaseStock(@Param("id") Long id, @Param("quantity") double quantity);
+
+    @Query("SELECT MAX(p.price) FROM ProductVariant p")
+    java.math.BigDecimal findMaxPrice();
 }

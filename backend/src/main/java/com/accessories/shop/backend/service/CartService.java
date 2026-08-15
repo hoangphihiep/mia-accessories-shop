@@ -6,7 +6,6 @@ import com.accessories.shop.backend.entity.Cart;
 import com.accessories.shop.backend.entity.CartItem;
 import com.accessories.shop.backend.entity.ProductVariant;
 import com.accessories.shop.backend.entity.User;
-import com.accessories.shop.backend.exception.BadRequestException;
 import com.accessories.shop.backend.exception.ResourceNotFoundException;
 import com.accessories.shop.backend.repository.CartItemRepository;
 import com.accessories.shop.backend.repository.CartRepository;
@@ -66,7 +65,7 @@ public class CartService {
                     .price(variant.getPrice())
                     .image(image)
                     .quantity(item.getQuantity())
-                    .stockQuantity(variant.getStockQuantity())
+                    .stockQuantity(variant.getDisplayQuantity() != null ? variant.getDisplayQuantity() : variant.getStockQuantity())
                     .build();
         }).collect(Collectors.toList());
     }
@@ -83,14 +82,16 @@ public class CartService {
 
         if (existingItem.isPresent()) {
             CartItem item = existingItem.get();
-            int newQuantity = item.getQuantity() + request.getQuantity();
-            if (newQuantity > variant.getStockQuantity()) {
-                newQuantity = variant.getStockQuantity();
+            double newQuantity = item.getQuantity() + request.getQuantity();
+            double displayStock = variant.getDisplayQuantity() != null ? variant.getDisplayQuantity() : variant.getStockQuantity();
+            if (newQuantity > displayStock) {
+                newQuantity = displayStock;
             }
             item.setQuantity(newQuantity);
             cartItemRepository.save(item);
         } else {
-            int initialQuantity = request.getQuantity() > variant.getStockQuantity() ? variant.getStockQuantity() : request.getQuantity();
+            double displayStock = variant.getDisplayQuantity() != null ? variant.getDisplayQuantity() : variant.getStockQuantity();
+            double initialQuantity = request.getQuantity() > displayStock ? displayStock : request.getQuantity();
             if (initialQuantity > 0) {
                 CartItem newItem = CartItem.builder()
                         .cart(cart)
@@ -105,7 +106,7 @@ public class CartService {
     }
 
     @Transactional
-    public List<CartItemResponse> updateQuantity(Long variantId, Integer quantity) {
+    public List<CartItemResponse> updateQuantity(Long variantId, Double quantity) {
         User user = getCurrentUser();
         Cart cart = getOrCreateCart(user);
 
@@ -116,7 +117,8 @@ public class CartService {
             cart.getItems().remove(item);
             cartItemRepository.delete(item);
         } else {
-            int finalQuantity = quantity > item.getProductVariant().getStockQuantity() ? item.getProductVariant().getStockQuantity() : quantity;
+            double displayStock = item.getProductVariant().getDisplayQuantity() != null ? item.getProductVariant().getDisplayQuantity() : item.getProductVariant().getStockQuantity();
+            double finalQuantity = quantity > displayStock ? displayStock : quantity;
             item.setQuantity(finalQuantity);
             cartItemRepository.save(item);
         }
@@ -150,14 +152,16 @@ public class CartService {
                 
                 if (existingItem.isPresent()) {
                     CartItem item = existingItem.get();
-                    int newQuantity = item.getQuantity() + req.getQuantity();
-                    if (newQuantity > variant.getStockQuantity()) {
-                        newQuantity = variant.getStockQuantity();
+                    double newQuantity = item.getQuantity() + req.getQuantity();
+                    double displayStock = variant.getDisplayQuantity() != null ? variant.getDisplayQuantity() : variant.getStockQuantity();
+                    if (newQuantity > displayStock) {
+                        newQuantity = displayStock;
                     }
                     item.setQuantity(newQuantity);
                     cartItemRepository.save(item);
                 } else {
-                    int initialQuantity = req.getQuantity() > variant.getStockQuantity() ? variant.getStockQuantity() : req.getQuantity();
+                    double displayStock = variant.getDisplayQuantity() != null ? variant.getDisplayQuantity() : variant.getStockQuantity();
+                    double initialQuantity = req.getQuantity() > displayStock ? displayStock : req.getQuantity();
                     CartItem newItem = CartItem.builder()
                             .cart(cart)
                             .productVariant(variant)

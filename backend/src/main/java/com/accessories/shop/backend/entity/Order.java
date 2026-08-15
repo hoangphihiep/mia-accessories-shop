@@ -7,6 +7,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 @Entity
@@ -61,6 +62,15 @@ public class Order {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "expected_completion_date")
+    private LocalDate expectedCompletionDate;
+
+    @Column(name = "expected_delivery_date")
+    private LocalDate expectedDeliveryDate;
+
+    @Column(name = "tracking_code")
+    private String trackingCode;
 
     @UpdateTimestamp
     @Column(name = "updated_at")

@@ -1,7 +1,7 @@
 package com.accessories.shop.backend.controller;
 
 import com.accessories.shop.backend.service.FileUploadService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,10 +15,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/upload")
+@RequiredArgsConstructor
 public class UploadController {
 
-    @Autowired
-    private FileUploadService fileUploadService;
+    private final FileUploadService fileUploadService;
 
     @PostMapping("/image")
     public ResponseEntity<Map<String, String>> uploadImage(@RequestParam("file") MultipartFile file) {

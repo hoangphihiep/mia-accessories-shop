@@ -10,4 +10,5 @@ import org.mapstruct.Mapper;
 public interface OrderMapper {
     OrderResponse toResponse(Order order);
     OrderDetailResponse toDetailResponse(OrderDetail orderDetail);
+    // Force MapStruct regeneration
 }

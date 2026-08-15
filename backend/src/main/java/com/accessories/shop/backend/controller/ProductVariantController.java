@@ -42,7 +42,7 @@ public class ProductVariantController {
         variant.setName(request.getName());
         variant.setPrice(request.getPrice());
         variant.setCompareAtPrice(request.getCompareAtPrice());
-        variant.setStockQuantity(0);
+        variant.setStockQuantity(0.0);
         variant.setCostPrice(java.math.BigDecimal.ZERO);
         variant.setSku(request.getSku());
         variant.setImageUrl(request.getImageUrl());

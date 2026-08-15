@@ -42,7 +42,7 @@ export default function Checkout() {
   } = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
-      paymentMethod: 'COD'
+      paymentMethod: 'VNPAY'
     }
   });
 
@@ -270,7 +270,8 @@ export default function Checkout() {
               </h2>
               
               <div className="space-y-4">
-                {/* COD Option */}
+                {/* COD Option (Temporarily disabled) */}
+                {/* 
                 <div 
                   onClick={() => setValue('paymentMethod', 'COD')}
                   className={`cursor-pointer border-2 rounded-xl p-4 flex items-center justify-between transition-all ${
@@ -292,6 +293,7 @@ export default function Checkout() {
                     </div>
                   </div>
                 </div>
+                */}
 
                 {/* VNPAY Option */}
                 <div 
@@ -337,7 +339,7 @@ export default function Checkout() {
                 </div>
               </div>
 
-              <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar mb-6">
+              <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 pt-2 custom-scrollbar mb-6">
                 {cartItems.map(item => (
                   <div key={item.variantId} className="flex items-start gap-4">
                     <div className="relative">

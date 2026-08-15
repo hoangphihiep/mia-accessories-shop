@@ -20,7 +20,6 @@ import java.util.Map;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
-import org.apache.commons.lang3.RandomStringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -112,34 +111,12 @@ public class AuthService {
         if (user.getFailedLoginAttempts() != null && user.getFailedLoginAttempts() > 0) {
             user.setFailedLoginAttempts(0);
         }
-        // Xóa trạng thái khóa (nếu có) và cập nhật Last Login
+        // Xóa trạng thái khóa (nếu có)
         user.setLockoutTime(null);
-        user.setLastLoginAt(LocalDateTime.now());
-        userRepository.save(user);
-
-        // Sinh Access Token
-        String jwtToken = jwtService.generateToken(user.getEmail(), user.getRole().getName());
-
-        // Xóa refresh token cũ nếu có (chỉ cho phép 1 thiết bị đăng nhập hoặc làm mới token liên tục)
-        // Nếu muốn cho phép đa thiết bị, có thể bỏ dòng này
-        refreshTokenRepository.deleteByUser(user);
-
-        // Sinh Refresh Token
-        String refreshTokenString = UUID.randomUUID().toString();
-        RefreshToken refreshToken = RefreshToken.builder()
-                .token(refreshTokenString)
-                .user(user)
-                .expiryDate(LocalDateTime.now().plusDays(7))
-                .build();
-        refreshTokenRepository.save(refreshToken);
-
-        return AuthResponse.builder()
-                .token(jwtToken)
-                .refreshToken(refreshTokenString)
-                .user(mapToUserResponse(user))
-                .build();
+        return generateAuthResponse(user);
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public AuthResponse oauth2Google(String token) {
         RestTemplate restTemplate = new RestTemplate();
         String url = "https://www.googleapis.com/oauth2/v3/userinfo?access_token=" + token;
@@ -162,6 +139,7 @@ public class AuthService {
         }
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public AuthResponse oauth2Facebook(String token) {
         RestTemplate restTemplate = new RestTemplate();
         String url = "https://graph.facebook.com/me?fields=id,name,email,picture&access_token=" + token;
@@ -250,12 +228,16 @@ public class AuthService {
                     .build();
         }
         
+        return generateAuthResponse(user);
+    }
+
+    private AuthResponse generateAuthResponse(User user) {
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
-        
+
         // Sinh JWT token
         String jwtToken = jwtService.generateToken(user.getEmail(), user.getRole().getName());
-        
+
         refreshTokenRepository.deleteByUser(user);
         String refreshTokenString = UUID.randomUUID().toString();
         RefreshToken refreshToken = RefreshToken.builder()
@@ -264,7 +246,7 @@ public class AuthService {
                 .expiryDate(LocalDateTime.now().plusDays(7))
                 .build();
         refreshTokenRepository.save(refreshToken);
-        
+
         return AuthResponse.builder()
                 .token(jwtToken)
                 .refreshToken(refreshTokenString)

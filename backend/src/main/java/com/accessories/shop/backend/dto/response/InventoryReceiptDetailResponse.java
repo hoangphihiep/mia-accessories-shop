@@ -9,6 +9,6 @@ import java.math.BigDecimal;
 public class InventoryReceiptDetailResponse {
     private Long id;
     private ProductVariantResponse productVariant;
-    private Integer quantity;
+    private Double quantity;
     private BigDecimal unitPrice;
 }

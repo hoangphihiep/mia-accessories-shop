@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Check, X, Printer, Package, MapPin, CreditCard, Phone, User, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Search, Check, X, Printer, Package, MapPin, CreditCard, Phone, User, ChevronRight, ShoppingBag, Wrench } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import api from '../../services/api';
 
@@ -9,9 +9,13 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState<{id: number, status: string} | null>(null);
+  const [expectedDate, setExpectedDate] = useState('');
+  const [trackingCode, setTrackingCode] = useState('');
   const { showToast } = useToast();
 
-  const tabs = ['All', 'PENDING', 'SHIPPING', 'COMPLETED', 'CANCELLED'];
+  const tabs = ['All', 'PENDING', 'PROCESSING', 'SHIPPING', 'COMPLETED', 'CANCELLED'];
 
   const fetchOrders = async () => {
     try {
@@ -34,10 +38,32 @@ export default function AdminOrders() {
     fetchOrders();
   }, []);
 
-  const updateStatus = async (id: number, newStatus: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const updateStatus = async (id: number, newStatus: string, expectedDateStr?: string | React.MouseEvent, trackingCodeStr?: string, e?: React.MouseEvent) => {
+    let mouseEvent = e;
+    let expectedDateParam = expectedDateStr;
+    let trackingCodeParam = trackingCodeStr;
+
+    if (typeof expectedDateStr === 'object') {
+      mouseEvent = expectedDateStr as React.MouseEvent;
+      expectedDateParam = undefined;
+      trackingCodeParam = undefined;
+    }
+
+    if (mouseEvent) mouseEvent.stopPropagation();
+
+    // If transitioning to PROCESSING or SHIPPING and no date is provided yet, show modal
+    if ((newStatus === 'PROCESSING' || newStatus === 'SHIPPING') && !expectedDateParam) {
+      setPendingStatusUpdate({ id, status: newStatus });
+      setShowDatePicker(true);
+      return;
+    }
+
     try {
-      await api.put(`/admin/orders/${id}/status`, { status: newStatus });
+      await api.put(`/admin/orders/${id}/status`, { 
+        status: newStatus,
+        ...(expectedDateParam && { expectedDate: expectedDateParam as string }),
+        ...(trackingCodeParam && { trackingCode: trackingCodeParam as string })
+      });
       showToast('Cập nhật trạng thái đơn hàng thành công', 'success');
       fetchOrders();
     } catch (error) {
@@ -57,6 +83,7 @@ export default function AdminOrders() {
     switch (status) {
       case 'COMPLETED': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
       case 'PENDING': return 'bg-amber-50 text-amber-600 border-amber-100';
+      case 'PROCESSING': return 'bg-indigo-50 text-indigo-600 border-indigo-100';
       case 'CANCELLED': return 'bg-rose-50 text-rose-600 border-rose-100';
       case 'SHIPPING': return 'bg-sky-50 text-sky-600 border-sky-100';
       default: return 'bg-gray-50 text-gray-600 border-gray-100';
@@ -67,6 +94,7 @@ export default function AdminOrders() {
     switch (status) {
       case 'COMPLETED': return 'HOÀN THÀNH';
       case 'PENDING': return 'CHỜ XỬ LÝ';
+      case 'PROCESSING': return 'ĐANG SẢN XUẤT';
       case 'CANCELLED': return 'ĐÃ HỦY';
       case 'SHIPPING': return 'ĐANG GIAO';
       default: return status;
@@ -158,10 +186,38 @@ export default function AdminOrders() {
                     <span className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border ${getStatusBadge(order.status)}`}>
                       {getStatusText(order.status)}
                     </span>
+                    {order.expectedCompletionDate && (
+                      <div className="text-[10px] font-bold text-amber-600 mt-2 flex items-center gap-1">
+                        Dự kiến xong: {new Date(order.expectedCompletionDate).toLocaleDateString('vi-VN')}
+                      </div>
+                    )}
+                    {order.expectedDeliveryDate && (
+                      <div className="text-[10px] font-bold text-amber-600 mt-2 flex items-center gap-1">
+                        Dự kiến giao: {new Date(order.expectedDeliveryDate).toLocaleDateString('vi-VN')}
+                      </div>
+                    )}
+                    {order.trackingCode && (
+                      <div className="text-[10px] font-bold text-gray-500 mt-1 flex items-center gap-1">
+                        Mã VĐ: <span className="uppercase text-gray-900">{order.trackingCode}</span>
+                      </div>
+                    )}
                   </td>
                   <td className="p-5 pr-8 text-right">
                     <div className="flex justify-end items-center space-x-2">
                       {order.status === 'PENDING' && (
+                        <>
+                          <button onClick={(e) => updateStatus(order.id, 'PROCESSING', e)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100" title="Đang sản xuất">
+                            <Wrench size={16} />
+                          </button>
+                          <button onClick={(e) => updateStatus(order.id, 'SHIPPING', e)} className="p-2 text-sky-600 hover:bg-sky-50 rounded-lg transition-colors border border-transparent hover:border-sky-100" title="Giao hàng">
+                            <Package size={16} />
+                          </button>
+                          <button onClick={(e) => updateStatus(order.id, 'CANCELLED', e)} className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-100" title="Hủy đơn">
+                            <X size={16} />
+                          </button>
+                        </>
+                      )}
+                      {order.status === 'PROCESSING' && (
                         <>
                           <button onClick={(e) => updateStatus(order.id, 'SHIPPING', e)} className="p-2 text-sky-600 hover:bg-sky-50 rounded-lg transition-colors border border-transparent hover:border-sky-100" title="Giao hàng">
                             <Package size={16} />
@@ -236,6 +292,19 @@ export default function AdminOrders() {
 
                 {selectedOrder.status === 'PENDING' && (
                   <div className="flex gap-2">
+                    <button onClick={() => updateStatus(selectedOrder.id, 'PROCESSING')} className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors">
+                      ĐANG SẢN XUẤT
+                    </button>
+                    <button onClick={() => updateStatus(selectedOrder.id, 'SHIPPING')} className="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition-colors">
+                      GIAO HÀNG
+                    </button>
+                    <button onClick={() => updateStatus(selectedOrder.id, 'CANCELLED')} className="px-4 py-2 bg-rose-50 text-rose-600 border border-rose-100 text-xs font-bold rounded-lg hover:bg-rose-100 transition-colors">
+                      HỦY
+                    </button>
+                  </div>
+                )}
+                {selectedOrder.status === 'PROCESSING' && (
+                  <div className="flex gap-2">
                     <button onClick={() => updateStatus(selectedOrder.id, 'SHIPPING')} className="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition-colors">
                       GIAO HÀNG
                     </button>
@@ -282,12 +351,47 @@ export default function AdminOrders() {
                 </div>
               )}
 
+              {/* Expected Dates & Tracking */}
+              {(selectedOrder.expectedCompletionDate || selectedOrder.expectedDeliveryDate || selectedOrder.trackingCode) && (
+                <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100">
+                  <h4 className="text-[11px] font-black uppercase tracking-widest text-amber-500 mb-4">Tiến độ dự kiến</h4>
+                  <div className="space-y-3 text-sm">
+                    {selectedOrder.expectedCompletionDate && (
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-amber-700">Dự kiến hoàn thành:</span>
+                        <span className="font-bold text-amber-900">
+                          {new Date(selectedOrder.expectedCompletionDate).toLocaleDateString('vi-VN')}
+                        </span>
+                      </div>
+                    )}
+                    {selectedOrder.expectedDeliveryDate && (
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-amber-700">Dự kiến giao hàng:</span>
+                        <span className="font-bold text-amber-900">
+                          {new Date(selectedOrder.expectedDeliveryDate).toLocaleDateString('vi-VN')}
+                        </span>
+                      </div>
+                    )}
+                    {selectedOrder.trackingCode && (
+                      <div className="flex justify-between items-center pt-2 border-t border-amber-200/50 mt-2">
+                        <span className="font-medium text-amber-700">Mã vận đơn:</span>
+                        <span className="font-black text-amber-900 tracking-wider">
+                          {selectedOrder.trackingCode}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Order Items */}
               <div>
                 <h4 className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-4">Sản phẩm ({selectedOrder.orderDetails?.length || 0})</h4>
                 <div className="space-y-4">
-                  {selectedOrder.orderDetails?.map((item: any, idx: number) => (
-                    <div key={idx} className="flex gap-4">
+                  {selectedOrder.orderDetails?.map((item: any, idx: number) => {
+                    const itemProfit = (item.price - (item.unitCost || 0)) * item.quantity;
+                    return (
+                    <div key={idx} className="flex gap-4 border-b border-gray-50 pb-4 last:border-0 last:pb-0">
                       <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
                         {item.productVariant?.imageUrl ? (
                           <img src={item.productVariant.imageUrl} alt="" className="w-full h-full object-cover" />
@@ -308,9 +412,16 @@ export default function AdminOrders() {
                           <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">x{item.quantity}</span>
                           <span className="font-black text-gray-900 text-sm">{(item.price * item.quantity).toLocaleString('vi-VN')}đ</span>
                         </div>
+                        {/* Hiển thị Giá vốn & Lợi nhuận (Chỉ xem trong admin) */}
+                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 border-dashed">
+                          <span className="text-[10px] text-gray-400 font-bold uppercase">Giá vốn: <span className="text-gray-600">{(item.unitCost || 0).toLocaleString('vi-VN')}đ/sp</span></span>
+                          <span className={`text-[10px] font-black uppercase tracking-wider ${itemProfit > 0 ? 'text-emerald-600' : itemProfit < 0 ? 'text-rose-600' : 'text-gray-500'}`}>
+                            Lãi: {itemProfit > 0 ? '+' : ''}{itemProfit.toLocaleString('vi-VN')}đ
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               </div>
 
@@ -318,16 +429,48 @@ export default function AdminOrders() {
               <div className="border-t border-gray-100 pt-6">
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500 font-medium">Tạm tính</span>
-                    <span className="font-bold text-gray-900">{selectedOrder.totalAmount.toLocaleString('vi-VN')}đ</span>
+                    <span className="text-gray-500 font-medium">Tạm tính (Tiền hàng)</span>
+                    <span className="font-bold text-gray-900">{(selectedOrder.totalAmount - (selectedOrder.shippingFee || 0)).toLocaleString('vi-VN')}đ</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-500 font-medium">Phí vận chuyển</span>
-                    <span className="font-bold text-gray-900">0đ</span>
+                    <span className="font-bold text-gray-900">{(selectedOrder.shippingFee || 0).toLocaleString('vi-VN')}đ</span>
                   </div>
                   <div className="pt-3 flex justify-between items-center border-t border-gray-100 border-dashed">
-                    <span className="text-gray-900 font-black uppercase tracking-wider">Tổng cộng</span>
+                    <span className="text-gray-900 font-black uppercase tracking-wider">Tổng cộng (Doanh thu)</span>
                     <span className="font-black text-xl text-primary">{selectedOrder.totalAmount.toLocaleString('vi-VN')}đ</span>
+                  </div>
+                </div>
+
+                {/* Phần Báo Cáo Lợi Nhuận Đặc Biệt Cho Admin */}
+                <div className="mt-6 bg-gray-900 p-4 rounded-xl shadow-inner text-white">
+                  <h4 className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-3 border-b border-gray-800 pb-2">Phân tích Lợi nhuận đơn hàng</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 font-medium">Doanh thu đơn</span>
+                      <span className="font-bold">{selectedOrder.totalAmount.toLocaleString('vi-VN')}đ</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 font-medium">Tổng giá vốn</span>
+                      <span className="font-bold text-gray-300">
+                        -{(() => {
+                          const cost = selectedOrder.orderDetails?.reduce((s: number, i: any) => s + (i.unitCost || 0) * i.quantity, 0) || 0;
+                          return cost.toLocaleString('vi-VN');
+                        })()}đ
+                      </span>
+                    </div>
+                    <div className="pt-2 flex justify-between items-center border-t border-gray-800 border-dashed">
+                      <span className="font-black uppercase tracking-wider text-xs">Lợi nhuận thuần</span>
+                      {(() => {
+                        const totalCost = selectedOrder.orderDetails?.reduce((s: number, i: any) => s + (i.unitCost || 0) * i.quantity, 0) || 0;
+                        const profit = selectedOrder.totalAmount - totalCost;
+                        return (
+                          <span className={`font-black text-lg ${profit > 0 ? 'text-emerald-400' : profit < 0 ? 'text-rose-400' : 'text-gray-400'}`}>
+                            {profit > 0 ? '+' : ''}{profit.toLocaleString('vi-VN')}đ
+                          </span>
+                        );
+                      })()}
+                    </div>
                   </div>
                 </div>
 
@@ -413,11 +556,11 @@ export default function AdminOrders() {
             <div className="w-64 space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Tạm tính:</span>
-                <span>{selectedOrder.totalAmount.toLocaleString('vi-VN')}đ</span>
+                <span>{(selectedOrder.totalAmount - (selectedOrder.shippingFee || 0)).toLocaleString('vi-VN')}đ</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Phí ship:</span>
-                <span>0đ</span>
+                <span>{(selectedOrder.shippingFee || 0).toLocaleString('vi-VN')}đ</span>
               </div>
               <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2">
                 <span>Tổng cộng:</span>
@@ -429,6 +572,61 @@ export default function AdminOrders() {
           <div className="text-center mt-16 text-sm text-gray-500">
             <p>Cảm ơn quý khách đã mua sắm tại Mia Accessories!</p>
             <p>Hẹn gặp lại quý khách.</p>
+          </div>
+        </div>
+      )}
+      {/* Date Picker Modal */}
+      {showDatePicker && pendingStatusUpdate && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-[100] flex items-center justify-center">
+          <div className="bg-white rounded-3xl p-8 w-[400px] shadow-2xl border border-gray-100">
+            <h3 className="text-xl font-black uppercase tracking-widest mb-2 text-gray-900">
+              {pendingStatusUpdate.status === 'PROCESSING' ? 'Dự kiến hoàn thành' : 'Dự kiến giao hàng'}
+            </h3>
+            <p className="text-gray-500 text-sm mb-6 font-medium">Vui lòng chọn ngày dự kiến để khách hàng tiện theo dõi tiến độ.</p>
+            <input 
+              type="date" 
+              value={expectedDate}
+              onChange={(e) => setExpectedDate(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl p-4 mb-4 focus:outline-none focus:border-primary font-bold text-gray-900 text-lg shadow-inner bg-gray-50"
+            />
+            {pendingStatusUpdate.status === 'SHIPPING' && (
+              <>
+                <p className="text-gray-500 text-sm mb-2 font-medium">Mã vận đơn (không bắt buộc):</p>
+                <input 
+                  type="text" 
+                  value={trackingCode}
+                  placeholder="VD: SPX123456789"
+                  onChange={(e) => setTrackingCode(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl p-4 mb-8 focus:outline-none focus:border-primary font-bold text-gray-900 text-lg shadow-inner bg-gray-50 uppercase"
+                />
+              </>
+            )}
+            <div className="flex gap-3 justify-end mt-4">
+              <button 
+                onClick={() => {
+                  setShowDatePicker(false);
+                  setPendingStatusUpdate(null);
+                  setExpectedDate('');
+                  setTrackingCode('');
+                }}
+                className="px-6 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors"
+              >
+                Hủy
+              </button>
+              <button 
+                onClick={() => {
+                  updateStatus(pendingStatusUpdate.id, pendingStatusUpdate.status, expectedDate, trackingCode);
+                  setShowDatePicker(false);
+                  setPendingStatusUpdate(null);
+                  setExpectedDate('');
+                  setTrackingCode('');
+                }}
+                disabled={!expectedDate}
+                className="px-6 py-3 rounded-xl font-bold bg-gray-900 text-white hover:bg-black transition-colors disabled:bg-gray-300 uppercase tracking-wider"
+              >
+                Xác nhận
+              </button>
+            </div>
           </div>
         </div>
       )}

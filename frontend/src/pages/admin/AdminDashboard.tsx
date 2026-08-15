@@ -1,13 +1,62 @@
 import { DollarSign, ShoppingBag, AlertCircle, ArrowUpRight, ArrowDownRight, TrendingUp, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useDashboardStats, useRecentOrders, useDailyProductSales, useTopProducts } from '../../hooks/useAdmin';
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { useDashboardStats, useRecentOrders, useDailyProductSales, useTopProducts, useProductStats } from '../../hooks/useAdmin';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ScatterChart, Scatter, ZAxis } from 'recharts';
+
+import { useState } from 'react';
 
 export default function AdminDashboard() {
-  const { data: statsData, isLoading: isStatsLoading, isError: isStatsError } = useDashboardStats();
+  const [timeRange, setTimeRange] = useState('thisMonth');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [productChartType, setProductChartType] = useState<'quantity' | 'revenue'>('quantity');
+  
+  // Use debounced or direct values depending on user action. For simplicity, pass directly.
+  const queryStartDate = timeRange === 'custom' && startDate && endDate ? startDate : undefined;
+  const queryEndDate = timeRange === 'custom' && startDate && endDate ? endDate : undefined;
+
+  const { data: statsData, isLoading: isStatsLoading, isError: isStatsError } = useDashboardStats(timeRange, queryStartDate, queryEndDate);
   const { data: ordersData = [], isLoading: isOrdersLoading, isError: isOrdersError } = useRecentOrders();
-  const { data: salesData = [], isLoading: isSalesLoading } = useDailyProductSales();
-  const { data: topProductsData = [], isLoading: isProductsLoading } = useTopProducts();
+  const { data: salesData = [], isLoading: isSalesLoading } = useDailyProductSales(timeRange, queryStartDate, queryEndDate);
+  const { data: topProductsData = [], isLoading: isProductsLoading } = useTopProducts(timeRange, queryStartDate, queryEndDate);
+  const { data: productStatsData = [], isLoading: isProductStatsLoading } = useProductStats(timeRange, queryStartDate, queryEndDate);
+
+  const scatterData: any[] = [];
+  salesData.forEach((day: any) => {
+    if (day.productsData) {
+      day.productsData.forEach((p: any) => {
+        scatterData.push({
+          date: day.date,
+          productName: p.name,
+          quantity: p.quantity,
+          revenue: p.revenue,
+          z: productChartType === 'quantity' ? p.quantity : p.revenue
+        });
+      });
+    }
+  });
+
+  const getTimeLabel = () => {
+    switch (timeRange) {
+      case 'thisWeek': return 'Tuần Này';
+      case 'lastMonth': return 'Tháng Trước';
+      case 'thisYear': return 'Năm Nay';
+      case 'custom': return 'Tùy Chỉnh';
+      case 'thisMonth':
+      default: return 'Tháng Này';
+    }
+  };
+
+  const getCompareLabel = () => {
+    switch (timeRange) {
+      case 'thisWeek': return 'SO VỚI TUẦN TRƯỚC';
+      case 'lastMonth': return 'SO VỚI THÁNG KỀ TRƯỚC';
+      case 'thisYear': return 'SO VỚI NĂM TRƯỚC';
+      case 'custom': return 'SO VỚI KỲ TRƯỚC';
+      case 'thisMonth':
+      default: return 'SO VỚI THÁNG TRƯỚC';
+    }
+  };
 
   const stats = {
     revenueThisMonth: statsData?.revenueThisMonth || 0,
@@ -40,7 +89,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (isStatsLoading || isOrdersLoading || isSalesLoading || isProductsLoading) return (
+  if (isStatsLoading || isOrdersLoading || isSalesLoading || isProductsLoading || isProductStatsLoading) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh]">
       <div className="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin mb-4"></div>
       <p className="text-gray-500 font-bold uppercase tracking-widest text-sm animate-pulse">Đang tải dữ liệu...</p>
@@ -49,7 +98,7 @@ export default function AdminDashboard() {
 
   const STATS_CARDS = [
     {
-      name: 'Doanh Thu Tháng Này',
+      name: `Doanh Thu ${getTimeLabel()}`,
       value: `${stats.revenueThisMonth.toLocaleString('vi-VN')}đ`,
       icon: DollarSign,
       color: 'text-emerald-500',
@@ -58,7 +107,7 @@ export default function AdminDashboard() {
       trend: stats.revenueTrend
     },
     {
-      name: 'Đơn Hàng Tháng Này',
+      name: `Đơn Hàng ${getTimeLabel()}`,
       value: stats.ordersThisMonth.toString(),
       icon: ShoppingBag,
       color: 'text-blue-500',
@@ -86,6 +135,66 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Header & Filter */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-gray-900 uppercase tracking-widest">Bảng Điều Khiển</h1>
+          <p className="text-gray-500 text-sm mt-1">Tổng quan tình hình kinh doanh của bạn</p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2 bg-white rounded-xl shadow-sm border border-gray-100 p-1">
+            <button 
+              onClick={() => setTimeRange('thisWeek')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${timeRange === 'thisWeek' ? 'bg-primary text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              Tuần này
+            </button>
+            <button 
+              onClick={() => setTimeRange('thisMonth')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${timeRange === 'thisMonth' ? 'bg-primary text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              Tháng này
+            </button>
+            <button 
+              onClick={() => setTimeRange('lastMonth')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${timeRange === 'lastMonth' ? 'bg-primary text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              Tháng trước
+            </button>
+            <button 
+              onClick={() => setTimeRange('thisYear')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${timeRange === 'thisYear' ? 'bg-primary text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              Năm nay
+            </button>
+            <button 
+              onClick={() => setTimeRange('custom')}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${timeRange === 'custom' ? 'bg-primary text-white shadow-md' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              Tùy chỉnh
+            </button>
+          </div>
+          
+          {timeRange === 'custom' && (
+            <div className="flex items-center gap-2 bg-white rounded-xl shadow-sm border border-gray-100 p-2 animate-in fade-in slide-in-from-top-2">
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:border-primary" 
+              />
+              <span className="text-gray-400 font-bold">-</span>
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:border-primary" 
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {STATS_CARDS.map((stat) => (
@@ -109,7 +218,7 @@ export default function AdminDashboard() {
                     {stat.trend >= 0 ? <ArrowUpRight size={14} className="mr-0.5" /> : <ArrowDownRight size={14} className="mr-0.5" />}
                     {Math.abs(stat.trend)}%
                   </div>
-                  <span className="text-[11px] font-bold text-gray-400 tracking-wider">SO VỚI THÁNG TRƯỚC</span>
+                  <span className="text-[11px] font-bold text-gray-400 tracking-wider">{getCompareLabel()}</span>
                 </div>
               )}
             </div>
@@ -128,7 +237,7 @@ export default function AdminDashboard() {
                 <TrendingUp size={24} className="text-emerald-500" />
                 Sản lượng bán ra
               </h2>
-              <p className="text-gray-400 text-sm mt-1">Số lượng sản phẩm và các mặt hàng được mua theo từng ngày</p>
+              <p className="text-gray-400 text-sm mt-1">Số lượng sản phẩm và các mặt hàng được mua theo kỳ</p>
             </div>
           </div>
           <div className="p-6 h-[400px]">
@@ -185,7 +294,7 @@ export default function AdminDashboard() {
                 <Trophy size={24} className="text-amber-500" />
                 Top Bán Chạy
               </h2>
-              <p className="text-gray-400 text-sm mt-1">5 sản phẩm hot nhất tháng</p>
+              <p className="text-gray-400 text-sm mt-1">5 sản phẩm hot nhất kỳ</p>
             </div>
           </div>
           <div className="flex-1 p-6 flex flex-col gap-4">
@@ -211,9 +320,101 @@ export default function AdminDashboard() {
               <div className="flex-1 flex flex-col items-center justify-center text-gray-400 py-8">
                 <Trophy size={48} className="mb-4 text-gray-200" />
                 <p className="font-bold text-gray-500">Chưa có dữ liệu</p>
-                <p className="text-sm text-center mt-1">Chưa có sản phẩm nào được bán ra trong tháng này.</p>
+                <p className="text-sm text-center mt-1">Chưa có sản phẩm nào được bán ra trong thời gian này.</p>
               </div>
             )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Product Stats Line Charts Row */}
+      <div className="grid grid-cols-1 gap-8">
+        
+        {/* Combined Product Stats Line Chart */}
+        <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+          <div className="p-8 border-b border-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/50 backdrop-blur-xl">
+            <div>
+              <h2 className="font-black uppercase tracking-widest text-xl text-gray-900 flex items-center gap-2">
+                {productChartType === 'quantity' ? <ShoppingBag size={24} className="text-blue-500" /> : <DollarSign size={24} className="text-amber-500" />}
+                Thống kê Tất cả Sản phẩm
+              </h2>
+              <p className="text-gray-400 text-sm mt-1">
+                {productChartType === 'quantity' ? 'Tổng số lượng bán ra của mỗi mặt hàng trong kỳ' : 'Tổng doanh thu mang lại của mỗi mặt hàng trong kỳ'}
+              </p>
+            </div>
+            <div className="flex bg-gray-50 p-1 rounded-lg">
+              <button
+                onClick={() => setProductChartType('quantity')}
+                className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${productChartType === 'quantity' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                Theo Số Lượng
+              </button>
+              <button
+                onClick={() => setProductChartType('revenue')}
+                className={`px-4 py-2 rounded-md text-sm font-bold transition-colors ${productChartType === 'revenue' ? 'bg-white shadow-sm text-amber-600' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                Theo Doanh Thu
+              </button>
+            </div>
+          </div>
+          <div className="p-6 h-[500px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 20, right: 30, left: 80, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis 
+                  type="category" 
+                  dataKey="date" 
+                  name="Ngày" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#9ca3af', fontSize: 12 }} 
+                  dy={10} 
+                />
+                <YAxis 
+                  type="category" 
+                  dataKey="productName" 
+                  name="Sản phẩm" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#9ca3af', fontSize: 11 }} 
+                  dx={-10} 
+                  tickFormatter={(value) => value.substring(0, 15) + (value.length > 15 ? '...' : '')}
+                />
+                <ZAxis 
+                  type="number" 
+                  dataKey="z" 
+                  range={[50, 400]} 
+                />
+                <Tooltip
+                  cursor={{ strokeDasharray: '3 3', stroke: '#cbd5e1' }}
+                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)' }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="bg-white p-4 rounded-2xl shadow-xl border border-gray-100">
+                          <p className="font-black text-gray-900 mb-1">{data.date}</p>
+                          <p className="text-gray-600 text-sm mb-2 font-medium">{data.productName}</p>
+                          {productChartType === 'quantity' ? (
+                            <p className="text-blue-600 font-bold">Bán ra: {data.quantity} sp</p>
+                          ) : (
+                            <p className="text-amber-600 font-bold">Doanh thu: {data.revenue.toLocaleString('vi-VN')}đ</p>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Scatter 
+                  name="Sản phẩm" 
+                  data={scatterData} 
+                  fill={productChartType === 'quantity' ? '#3b82f6' : '#f59e0b'} 
+                  fillOpacity={0.7}
+                />
+              </ScatterChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
@@ -254,7 +455,10 @@ export default function AdminDashboard() {
                         order.status === 'PENDING' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                           order.status === 'CANCELLED' ? 'bg-rose-50 text-rose-600 border-rose-100' :
                             'bg-sky-50 text-sky-600 border-sky-100'}`}>
-                      {order.status}
+                      {order.status === 'COMPLETED' ? 'HOÀN THÀNH' :
+                       order.status === 'PENDING' ? 'CHỜ XỬ LÝ' :
+                       order.status === 'CANCELLED' ? 'ĐÃ HỦY' :
+                       order.status === 'SHIPPING' ? 'ĐANG GIAO' : order.status}
                     </span>
                   </td>
                 </tr>

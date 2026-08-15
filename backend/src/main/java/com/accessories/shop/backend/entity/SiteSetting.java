@@ -19,6 +19,6 @@ public class SiteSetting {
     @Column(name = "setting_value", columnDefinition = "TEXT")
     private String settingValue;
 
-    @Column(name = "description", length = 255)
+    @Column(name = "description")
     private String description;
 }

@@ -29,7 +29,7 @@ public class OrderCleanupTask {
             // Chỉ hủy những đơn hàng online (VNPAY) chưa thanh toán
             if ("VNPAY".equals(order.getPaymentMethod()) && !order.getIsPaid()) {
                 try {
-                    orderService.updateOrderStatus(order.getId(), "CANCELLED");
+                    orderService.updateOrderStatus(order.getId(), "CANCELLED", null, null);
                     count++;
                 } catch (Exception e) {
                     System.err.println("Lỗi khi hủy tự động đơn hàng ID " + order.getId() + ": " + e.getMessage());

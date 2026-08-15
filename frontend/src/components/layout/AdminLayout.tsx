@@ -33,7 +33,7 @@ export default function AdminLayout() {
     { name: 'Bảng điều khiển', href: '/admin', icon: LayoutDashboard },
     { name: 'Bán hàng (POS)', href: '/admin/pos', icon: ShoppingBag },
     { name: 'Đơn hàng', href: '/admin/orders', icon: ShoppingBag },
-    { name: 'Sản phẩm', href: '/admin/products', icon: Package },
+    { name: 'Hàng hoá', href: '/admin/products', icon: Package },
     { name: 'Nhập kho', href: '/admin/inventory', icon: ArrowDownToLine },
     { name: 'Đánh giá', href: '/admin/reviews', icon: Star },
   ];

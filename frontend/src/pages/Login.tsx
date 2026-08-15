@@ -61,13 +61,26 @@ export default function Login() {
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '', rememberMe: false },
+    defaultValues: { 
+      email: localStorage.getItem('rememberedEmail') || '', 
+      password: localStorage.getItem('rememberedPassword') || '', 
+      rememberMe: localStorage.getItem('rememberedEmail') ? true : false 
+    },
   });
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
       setApiError('');
       const response = await loginMutation(data);
+      
+      if (data.rememberMe) {
+        localStorage.setItem('rememberedEmail', data.email);
+        localStorage.setItem('rememberedPassword', data.password);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberedPassword');
+      }
+
       if (response.user?.role?.name === 'ROLE_ADMIN' || response.user?.role?.name === 'ROLE_STAFF') {
         navigate('/admin');
       } else {

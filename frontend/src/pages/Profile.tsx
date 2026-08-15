@@ -195,6 +195,7 @@ export default function Profile() {
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
       case 'PENDING': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      case 'PROCESSING': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
       case 'SHIPPING': return 'bg-sky-50 text-sky-700 border-sky-200';
       case 'COMPLETED': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'CANCELLED': return 'bg-red-50 text-red-700 border-red-200';
@@ -205,6 +206,7 @@ export default function Profile() {
   const getStatusText = (status: string) => {
     switch (status.toUpperCase()) {
       case 'PENDING': return 'Chờ xác nhận';
+      case 'PROCESSING': return 'Đang sản xuất';
       case 'SHIPPING': return 'Đang giao hàng';
       case 'COMPLETED': return 'Hoàn thành';
       case 'CANCELLED': return 'Đã hủy';
@@ -593,6 +595,7 @@ export default function Profile() {
                   {[
                     { id: 'ALL', label: 'Tất cả' },
                     { id: 'PENDING', label: 'Chờ xác nhận' },
+                    { id: 'PROCESSING', label: 'Đang sản xuất' },
                     { id: 'SHIPPING', label: 'Đang giao' },
                     { id: 'COMPLETED', label: 'Thành công' },
                     { id: 'CANCELLED', label: 'Đã hủy' }
@@ -634,6 +637,32 @@ export default function Profile() {
                         
                         {/* Body */}
                         <div className="p-6 space-y-4">
+                          {(order.expectedCompletionDate || order.expectedDeliveryDate || order.trackingCode) && (
+                            <div className="mb-4 p-4 bg-amber-50 rounded-xl border border-amber-100 text-sm">
+                              <h4 className="font-bold text-amber-900 mb-2 uppercase tracking-widest text-xs flex items-center gap-2">
+                                <Package size={14} /> Tiến độ dự kiến
+                              </h4>
+                              {order.expectedCompletionDate && (
+                                <p className="text-amber-800 flex justify-between mt-2">
+                                  <span>Dự kiến hoàn thành:</span>
+                                  <span className="font-bold">{new Date(order.expectedCompletionDate).toLocaleDateString('vi-VN')}</span>
+                                </p>
+                              )}
+                              {order.expectedDeliveryDate && (
+                                <p className="text-amber-800 flex justify-between mt-2">
+                                  <span>Dự kiến giao hàng:</span>
+                                  <span className="font-bold">{new Date(order.expectedDeliveryDate).toLocaleDateString('vi-VN')}</span>
+                                </p>
+                              )}
+                              {order.trackingCode && (
+                                <p className="text-amber-800 flex justify-between mt-2 pt-2 border-t border-amber-200/50">
+                                  <span>Mã vận đơn:</span>
+                                  <span className="font-black tracking-wider">{order.trackingCode}</span>
+                                </p>
+                              )}
+                            </div>
+                          )}
+
                           {order.orderDetails?.map((detail: any) => (
                             <div key={detail.id} className="flex items-center gap-4">
                               <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden flex items-center justify-center">
@@ -645,7 +674,7 @@ export default function Profile() {
                                 )}
                               </div>
                               <div className="flex-1">
-                                <h4 className="font-bold text-gray-900">{detail.productVariant?.product?.name || 'Sản phẩm'} - {detail.productVariant?.name || 'Phân loại'}</h4>
+                                <h4 className="font-bold text-gray-900">{detail.productVariant?.productName || 'Sản phẩm'} - {detail.productVariant?.name || 'Phân loại'}</h4>
                                 <p className="text-gray-500 text-sm mt-1">Số lượng: <span className="font-bold">{detail.quantity}</span></p>
                               </div>
                               <div className="text-right">
@@ -662,8 +691,14 @@ export default function Profile() {
                           </div>
                           <div className="flex items-center gap-6">
                             <div className="text-right">
-                              <span className="text-gray-500 font-medium uppercase tracking-wider text-sm mr-2">Tổng cộng:</span>
-                              <span className="text-xl font-black text-gray-900">{order.totalAmount.toLocaleString('vi-VN')}đ</span>
+                              <div className="flex justify-end items-center gap-4 text-sm mb-1 text-gray-500">
+                                <span>Tạm tính: {(order.totalAmount - (order.shippingFee || 0)).toLocaleString('vi-VN')}đ</span>
+                                <span>Phí ship: {(order.shippingFee || 0).toLocaleString('vi-VN')}đ</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-900 font-bold uppercase tracking-wider text-sm mr-2">Tổng cộng:</span>
+                                <span className="text-xl font-black text-primary">{order.totalAmount.toLocaleString('vi-VN')}đ</span>
+                              </div>
                             </div>
                             
                             {order.status.toUpperCase() === 'PENDING' && (

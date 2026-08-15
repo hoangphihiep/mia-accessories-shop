@@ -13,7 +13,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   // Check stock
   const totalStock = product.variants ? product.variants.reduce((sum: number, v: any) => sum + v.stockQuantity, 0) : 0;
   const isOutOfStock = totalStock === 0;
-  const price = product.variants && product.variants.length > 0 ? product.variants[0].price : 0;
+  const minPrice = product.variants && product.variants.length > 0 ? Math.min(...product.variants.map((v: any) => v.price)) : 0;
+  const maxCompareAtPrice = product.variants && product.variants.length > 0 ? Math.max(...product.variants.map((v: any) => v.compareAtPrice || 0)) : 0;
 
   return (
     <Link to={`/product/${product.slug || product.id}`} className="group flex flex-col bg-white rounded-3xl overflow-hidden shadow-[0_2px_20px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-2 transition-all duration-500 border border-gray-100">
@@ -61,9 +62,14 @@ export default function ProductCard({ product }: ProductCardProps) {
           {product.name}
         </h3>
         <div className="mt-auto flex items-center justify-between">
-          <p className="text-lg md:text-xl font-black text-gray-900 tracking-tight">
-            {price ? price.toLocaleString('vi-VN') + ' ₫' : 'Liên hệ'}
-          </p>
+          <div className="flex flex-col">
+            {maxCompareAtPrice > 0 && maxCompareAtPrice > minPrice && (
+              <span className="text-xs font-bold text-gray-400 line-through mb-0.5">{maxCompareAtPrice.toLocaleString('vi-VN')} ₫</span>
+            )}
+            <p className="text-lg md:text-xl font-black text-gray-900 tracking-tight">
+              {minPrice ? minPrice.toLocaleString('vi-VN') + ' ₫' : 'Liên hệ'}
+            </p>
+          </div>
         </div>
       </div>
     </Link>

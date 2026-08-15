@@ -65,10 +65,6 @@ public class ReviewService {
         updateProductRatingMetrics(product.getId());
         return saved;
     }
-    
-    public List<Review> getProductReviews(Long productId) {
-        return reviewRepository.findByProductIdAndIsActiveTrue(productId);
-    }
 
     public Page<Review> getFilteredProductReviews(Long productId, Integer stars, Boolean hasImage, Pageable pageable) {
         return reviewRepository.findProductReviewsWithFilters(productId, stars, hasImage, pageable);

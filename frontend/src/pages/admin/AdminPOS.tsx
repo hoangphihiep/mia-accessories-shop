@@ -43,7 +43,7 @@ export default function AdminPOS() {
     const fetchData = async () => {
       try {
         const [prodRes, catRes] = await Promise.all([
-          api.get('/products?size=100'), 
+          api.get('/products?size=1000&includeInactive=true'), 
           api.get('/categories')
         ]);
         setProducts(prodRes.data.content || prodRes.data);
@@ -288,7 +288,7 @@ export default function AdminPOS() {
       setAmountGiven('');
       setCustomerTier('');
       
-      const prodRes = await api.get('/products?size=100');
+      const prodRes = await api.get('/products?size=1000&includeInactive=true');
       setProducts(prodRes.data.content || prodRes.data);
     } catch (error: any) {
       showToast(error.response?.data?.message || 'Có lỗi xảy ra khi thanh toán', 'error');

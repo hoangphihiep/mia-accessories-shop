@@ -21,9 +21,6 @@ public class JwtService {
     @Value("${JWT_SECRET_KEY}")
     private String secretKey;
 
-    // Thời gian sống của Token (24 giờ tính bằng mili-giây)
-    private final long jwtExpiration = 86400000;
-
     // 1. Hàm trích xuất Username (Email) từ trong Token ra
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -31,6 +28,9 @@ public class JwtService {
 
     // 2. Hàm đúc ra Token từ thông tin Email và Role của User
     public String generateToken(String email, String role) {
+        // Thời gian sống của Token (24 giờ tính bằng mili-giây)
+        long jwtExpiration = 86400000;
+        
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("role", role); // Nhét role vào token để sau này phân quyền cho tiện
         return Jwts.builder()

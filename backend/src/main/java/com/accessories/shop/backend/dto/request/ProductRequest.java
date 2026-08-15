@@ -3,6 +3,7 @@ package com.accessories.shop.backend.dto.request;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.List;
+import java.math.BigDecimal;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -17,6 +18,7 @@ public class ProductRequest {
     
     private String slug;
     private String description;
+    private String technicalSpecifications;
     
     @NotNull(message = "Trạng thái bắt buộc chọn")
     private Boolean isActive;
@@ -37,4 +39,8 @@ public class ProductRequest {
     private List<ProductVariantRequest> variants;
     
     private List<String> images;
+
+    private String productionType;
+    private BigDecimal electricityCost;
+    private BigDecimal machineCost;
 }

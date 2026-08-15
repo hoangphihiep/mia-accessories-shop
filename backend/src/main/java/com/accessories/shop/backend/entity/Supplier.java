@@ -30,6 +30,11 @@ public class Supplier {
     @Column(columnDefinition = "TEXT")
     private String address;
 
+    private String cccd; // Căn cước công dân
+    private String taxCode; // Mã số thuế
+    private String legalRepresentative; // Người đại diện pháp lý
+    private String directContactPerson; // Người làm việc trực tiếp
+
     // Tổng số nợ cần trả cho nhà cung cấp (được cộng lên khi nhập kho chưa thanh toán)
     @Column(precision = 15, scale = 2)
     @Builder.Default

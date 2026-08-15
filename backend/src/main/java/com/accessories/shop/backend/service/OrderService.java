@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +30,33 @@ public class OrderService {
     private final ProductVariantRepository productVariantRepository;
     private final UserRepository userRepository;
     private final com.accessories.shop.backend.repository.SiteSettingRepository siteSettingRepository;
+
+    private BigDecimal processOrderItem(OrderItemRequest itemReq, Order order) {
+        ProductVariant variant = productVariantRepository.findById(itemReq.getVariantId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mẫu sản phẩm với ID: " + itemReq.getVariantId()));
+
+        double displayStock = variant.getDisplayQuantity() != null ? variant.getDisplayQuantity() : variant.getStockQuantity();
+        if (itemReq.getQuantity() > displayStock) {
+            throw new BadRequestException("Sản phẩm " + variant.getName() + " chỉ còn tối đa " + displayStock + " trên cửa hàng!");
+        }
+
+        int updated = productVariantRepository.decreaseStock(itemReq.getVariantId(), itemReq.getQuantity());
+        if (updated == 0) {
+            throw new BadRequestException("Sản phẩm " + variant.getName() + " đã hết hàng trong kho thực tế!");
+        }
+
+        OrderDetail orderDetail = OrderDetail.builder()
+                .order(order)
+                .productVariant(variant)
+                .quantity(itemReq.getQuantity())
+                .price(variant.getPrice())
+                .unitCost(variant.getCostPrice() != null ? variant.getCostPrice() : BigDecimal.ZERO)
+                .build();
+
+        order.getOrderDetails().add(orderDetail);
+
+        return variant.getPrice().multiply(BigDecimal.valueOf(itemReq.getQuantity()));
+    }
 
     // Dùng @Transactional để lỡ đang lưu đơn hàng mà bị lỗi thì nó hoàn tác (rollback) lại toàn bộ, không bị trừ hụt kho
     @Transactional
@@ -55,29 +83,8 @@ public class OrderService {
 
         // 3. Xử lý từng món hàng trong giỏ
         for (OrderItemRequest itemReq : request.getItems()) {
-            ProductVariant variant = productVariantRepository.findById(itemReq.getVariantId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mẫu sản phẩm với ID: " + itemReq.getVariantId()));
-
-            // Cập nhật tồn kho an toàn (Atomic Update chống Race Condition)
-            int updated = productVariantRepository.decreaseStock(itemReq.getVariantId(), itemReq.getQuantity());
-            if (updated == 0) {
-                throw new BadRequestException("Sản phẩm " + variant.getName() + " đã hết hàng hoặc không đủ số lượng!");
-            }
-
-            // Tính tiền
-            BigDecimal itemTotal = variant.getPrice().multiply(BigDecimal.valueOf(itemReq.getQuantity()));
+            BigDecimal itemTotal = processOrderItem(itemReq, order);
             totalAmount = totalAmount.add(itemTotal);
-
-            // Tạo Chi tiết đơn hàng
-            OrderDetail orderDetail = OrderDetail.builder()
-                    .order(order)
-                    .productVariant(variant)
-                    .quantity(itemReq.getQuantity())
-                    .price(variant.getPrice()) // Lưu cứng giá bán hiện tại
-                    .unitCost(variant.getCostPrice() != null ? variant.getCostPrice() : BigDecimal.ZERO) // Lưu cứng giá vốn hiện tại
-                    .build();
-
-            order.getOrderDetails().add(orderDetail);
         }
 
         BigDecimal defaultShippingFee = siteSettingRepository.findById("SHIPPING_FEE_DEFAULT")
@@ -134,26 +141,8 @@ public class OrderService {
         BigDecimal totalAmount = BigDecimal.ZERO;
 
         for (OrderItemRequest itemReq : request.getItems()) {
-            ProductVariant variant = productVariantRepository.findById(itemReq.getVariantId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mẫu sản phẩm"));
-
-            int updated = productVariantRepository.decreaseStock(itemReq.getVariantId(), itemReq.getQuantity());
-            if (updated == 0) {
-                throw new BadRequestException("Sản phẩm " + variant.getName() + " đã hết hàng hoặc không đủ số lượng!");
-            }
-
-            BigDecimal itemTotal = variant.getPrice().multiply(BigDecimal.valueOf(itemReq.getQuantity()));
+            BigDecimal itemTotal = processOrderItem(itemReq, order);
             totalAmount = totalAmount.add(itemTotal);
-
-            OrderDetail orderDetail = OrderDetail.builder()
-                    .order(order)
-                    .productVariant(variant)
-                    .quantity(itemReq.getQuantity())
-                    .price(variant.getPrice())
-                    .unitCost(variant.getCostPrice() != null ? variant.getCostPrice() : BigDecimal.ZERO)
-                    .build();
-
-            order.getOrderDetails().add(orderDetail);
         }
 
         order.setShippingFee(BigDecimal.ZERO);
@@ -201,33 +190,50 @@ public class OrderService {
 
     @Transactional
     @CacheEvict(value = "products", allEntries = true)
-    public Order updateOrderStatus(Long orderId, String newStatus) {
+    public Order updateOrderStatus(Long orderId, String newStatus, String expectedDateStr, String trackingCode) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với ID: " + orderId));
         
         String currentStatus = order.getStatus();
 
         // Kiểm tra State Machine
-        if (newStatus.equals("CANCELLED")) {
-            if (!currentStatus.equals("PENDING")) {
-                throw new BadRequestException("Chỉ có thể hủy đơn hàng khi đang chờ xử lý.");
+        switch (newStatus) {
+            case "CANCELLED" -> {
+                if (!currentStatus.equals("PENDING") && !currentStatus.equals("PROCESSING")) {
+                    throw new BadRequestException("Chỉ có thể hủy đơn hàng khi đang chờ xử lý hoặc đang sản xuất.");
+                }
+                // Hoàn lại số lượng tồn kho an toàn (Atomic)
+                for (OrderDetail detail : order.getOrderDetails()) {
+                    productVariantRepository.increaseStock(detail.getProductVariant().getId(), detail.getQuantity());
+                }
             }
-            // Hoàn lại số lượng tồn kho an toàn (Atomic)
-            for (OrderDetail detail : order.getOrderDetails()) {
-                productVariantRepository.increaseStock(detail.getProductVariant().getId(), detail.getQuantity());
+            case "PROCESSING" -> {
+                if (!currentStatus.equals("PENDING")) {
+                    throw new BadRequestException("Chỉ có thể chuyển sang sản xuất từ trạng thái chờ xử lý.");
+                }
+                if (expectedDateStr != null && !expectedDateStr.trim().isEmpty()) {
+                    order.setExpectedCompletionDate(LocalDate.parse(expectedDateStr));
+                }
             }
-        } else if (newStatus.equals("SHIPPING")) {
-            if (!currentStatus.equals("PENDING")) {
-                throw new BadRequestException("Chỉ có thể chuyển sang giao hàng từ trạng thái chờ xử lý.");
+            case "SHIPPING" -> {
+                if (!currentStatus.equals("PENDING") && !currentStatus.equals("PROCESSING")) {
+                    throw new BadRequestException("Chỉ có thể chuyển sang giao hàng từ trạng thái chờ xử lý hoặc đang sản xuất.");
+                }
+                if (expectedDateStr != null && !expectedDateStr.trim().isEmpty()) {
+                    order.setExpectedDeliveryDate(LocalDate.parse(expectedDateStr));
+                }
+                if (trackingCode != null && !trackingCode.trim().isEmpty()) {
+                    order.setTrackingCode(trackingCode.trim());
+                }
             }
-        } else if (newStatus.equals("COMPLETED")) {
-            if (!currentStatus.equals("SHIPPING")) {
-                throw new BadRequestException("Chỉ có thể hoàn thành đơn hàng đang giao.");
+            case "COMPLETED" -> {
+                if (!currentStatus.equals("SHIPPING")) {
+                    throw new BadRequestException("Chỉ có thể hoàn thành đơn hàng đang giao.");
+                }
+                // Tự động cập nhật đã thanh toán khi giao hàng thành công (dành cho COD)
+                order.setIsPaid(true);
             }
-            // Tự động cập nhật đã thanh toán khi giao hàng thành công (dành cho COD)
-            order.setIsPaid(true);
-        } else {
-            throw new BadRequestException("Trạng thái không hợp lệ: " + newStatus);
+            default -> throw new BadRequestException("Trạng thái không hợp lệ: " + newStatus);
         }
 
         order.setStatus(newStatus);

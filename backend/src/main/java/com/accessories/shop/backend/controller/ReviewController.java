@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
 
@@ -30,7 +28,7 @@ public class ReviewController {
             @PathVariable Long productId,
             @RequestParam(required = false) Integer stars,
             @RequestParam(required = false) Boolean hasImage,
-            @PageableDefault(size = 10, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
         Page<ReviewResponse> responses = reviewService.getFilteredProductReviews(productId, stars, hasImage, pageable)
                 .map(reviewMapper::toResponse);
         return ResponseEntity.ok(responses);

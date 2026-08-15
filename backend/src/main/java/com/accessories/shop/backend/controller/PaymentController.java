@@ -3,6 +3,7 @@ package com.accessories.shop.backend.controller;
 import com.accessories.shop.backend.service.VNPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +15,7 @@ import java.util.HashMap;
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentController {
 
     private final VNPayService vnPayService;
@@ -62,7 +64,7 @@ public class PaymentController {
                 return ResponseEntity.ok(Map.of("status", "failed", "message", "Payment failed"));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error processing VNPay return: ", e);
             return ResponseEntity.internalServerError().body(Map.of("status", "error", "message", e.getMessage()));
         }
     }
@@ -90,7 +92,7 @@ public class PaymentController {
                 return ResponseEntity.ok(Map.of("RspCode", "02", "Message", "Order already confirmed or failed"));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error processing VNPay IPN: ", e);
             return ResponseEntity.ok(Map.of("RspCode", "99", "Message", "Unknown error"));
         }
     }

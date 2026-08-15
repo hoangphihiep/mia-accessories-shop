@@ -81,6 +81,7 @@ export interface ProductResponse {
   name: string;
   slug: string;
   description: string;
+  technicalSpecifications?: string;
   isActive: boolean;
   isNew?: boolean;
   isFeatured?: boolean;

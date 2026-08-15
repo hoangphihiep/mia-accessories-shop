@@ -25,6 +25,9 @@ public class InventoryReceipt {
     @JoinColumn(name = "user_id", nullable = false)
     private User createdBy;
 
+    @Column(name = "receipt_type")
+    private String receiptType; // "IMPORTED" or "MANUFACTURED"
+
     // Giữ lại trường cũ tránh crash DB
     private String supplier;
 

@@ -17,6 +17,6 @@ public class CartItemResponse {
     private String variantName;
     private BigDecimal price;
     private String image;
-    private Integer quantity;
-    private Integer stockQuantity;
+    private Double quantity;
+    private Double stockQuantity;
 }

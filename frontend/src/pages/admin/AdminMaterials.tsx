@@ -14,6 +14,29 @@ export default function AdminMaterials() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ name: '', slug: '', careInstructions: '' });
 
+  const generateSlug = (text: string) => {
+    return text.toString().toLowerCase()
+      .replace(/đ/g, 'd')
+      .replace(/[áàảãạâấầẩẫậăắằẳẵặ]/g, 'a')
+      .replace(/[éèẻẽẹêếềểễệ]/g, 'e')
+      .replace(/[íìỉĩị]/g, 'i')
+      .replace(/[óòỏõọôốồổỗộơớờởỡợ]/g, 'o')
+      .replace(/[úùủũụưứừửữự]/g, 'u')
+      .replace(/[ýỳỷỹỵ]/g, 'y')
+      .replace(/[^a-z0-9 -]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      name: newName,
+      slug: editingId ? prev.slug : generateSlug(newName)
+    }));
+  };
+
   const fetchMaterials = async () => {
     try {
       const response = await api.get('/materials');
@@ -195,7 +218,7 @@ export default function AdminMaterials() {
                 type="text"
                 required
                 value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                onChange={handleNameChange}
                 className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-bold focus:outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
                 placeholder="VD: Bạc 925"
               />

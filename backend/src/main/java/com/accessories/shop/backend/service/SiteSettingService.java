@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.accessories.shop.backend.exception.BadRequestException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

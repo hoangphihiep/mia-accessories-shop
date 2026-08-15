@@ -20,5 +20,10 @@ export const ProductService = {
   getFeaturedProducts: async (size: number = 4): Promise<PageResponse<ProductResponse>> => {
     const response = await api.get('/products', { params: { page: 0, size, isFeatured: true, sort: 'createdAt,desc' } });
     return response.data;
+  },
+
+  getMaxPrice: async (): Promise<number> => {
+    const response = await api.get('/products/max-price');
+    return response.data;
   }
 };

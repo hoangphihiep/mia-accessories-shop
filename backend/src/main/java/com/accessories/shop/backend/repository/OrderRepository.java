@@ -30,9 +30,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByStatusAndCreatedAtBetween(String status, LocalDateTime startDate, LocalDateTime endDate);
 
-    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.createdAt >= :startDate AND o.createdAt <= :endDate")
-    BigDecimal sumTotalRevenueBetween(LocalDateTime startDate, LocalDateTime endDate);
-
     // Dành cho Danh sách Đơn hàng mới
     Page<Order> findAllByOrderByCreatedAtDesc(Pageable pageable);
 

@@ -17,7 +17,16 @@ export default function AdminSuppliers() {
   const { showToast } = useToast();
 
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '' });
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    cccd: '',
+    taxCode: '',
+    legalRepresentative: '',
+    directContactPerson: ''
+  });
   const [supplierDebt, setSupplierDebt] = useState<number>(0);
 
   // Lịch sử data
@@ -130,13 +139,17 @@ export default function AdminSuppliers() {
         name: supplier.name,
         phone: supplier.phone || '',
         email: supplier.email || '',
-        address: supplier.address || ''
+        address: supplier.address || '',
+        cccd: supplier.cccd || '',
+        taxCode: supplier.taxCode || '',
+        legalRepresentative: supplier.legalRepresentative || '',
+        directContactPerson: supplier.directContactPerson || ''
       });
       fetchSupplierHistory(supplier.id);
     } else {
       setEditingId(null);
       setSupplierDebt(0);
-      setFormData({ name: '', phone: '', email: '', address: '' });
+      setFormData({ name: '', phone: '', email: '', address: '', cccd: '', taxCode: '', legalRepresentative: '', directContactPerson: '' });
       setReceipts([]);
       setPayments([]);
     }
@@ -368,32 +381,87 @@ export default function AdminSuppliers() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-3">
-                      Số điện thoại
-                    </label>
-                    <input
-                      type="tel"
-                      pattern="^(0[35789])([0-9]{8})$"
-                      title="Số điện thoại phải có 10 chữ số và bắt đầu bằng đầu số hợp lệ (VD: 09, 03...)"
-                      value={formData.phone}
-                      onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full bg-gray-50 border-none p-4 rounded-xl focus:ring-2 focus:ring-primary focus:bg-white transition-all font-medium"
-                      placeholder="0987654321"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-3">
+                        Số điện thoại
+                      </label>
+                      <input
+                        type="tel"
+                        pattern="^(0[35789])([0-9]{8})$"
+                        title="Số điện thoại phải có 10 chữ số và bắt đầu bằng đầu số hợp lệ (VD: 09, 03...)"
+                        value={formData.phone}
+                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                        className="w-full bg-gray-50 border-none p-4 rounded-xl focus:ring-2 focus:ring-primary focus:bg-white transition-all font-medium"
+                        placeholder="0987654321"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-3">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                        className="w-full bg-gray-50 border-none p-4 rounded-xl focus:ring-2 focus:ring-primary focus:bg-white transition-all font-medium"
+                        placeholder="contact@xuongbac.com"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-3">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={e => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full bg-gray-50 border-none p-4 rounded-xl focus:ring-2 focus:ring-primary focus:bg-white transition-all font-medium"
-                      placeholder="contact@xuongbac.com"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-3">
+                        Người đại diện pháp lý
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.legalRepresentative}
+                        onChange={e => setFormData({ ...formData, legalRepresentative: e.target.value })}
+                        className="w-full bg-gray-50 border-none p-4 rounded-xl focus:ring-2 focus:ring-primary focus:bg-white transition-all font-medium"
+                        placeholder="Giám đốc / Chủ cơ sở"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-3">
+                        Người làm việc trực tiếp
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.directContactPerson}
+                        onChange={e => setFormData({ ...formData, directContactPerson: e.target.value })}
+                        className="w-full bg-gray-50 border-none p-4 rounded-xl focus:ring-2 focus:ring-primary focus:bg-white transition-all font-medium"
+                        placeholder="Nhân viên sales, kế toán..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-3">
+                        Căn cước công dân
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.cccd}
+                        onChange={e => setFormData({ ...formData, cccd: e.target.value })}
+                        className="w-full bg-gray-50 border-none p-4 rounded-xl focus:ring-2 focus:ring-primary focus:bg-white transition-all font-medium"
+                        placeholder="Số CCCD của người đại diện"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-black uppercase tracking-widest text-gray-500 mb-3">
+                        Mã số thuế
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.taxCode}
+                        onChange={e => setFormData({ ...formData, taxCode: e.target.value })}
+                        className="w-full bg-gray-50 border-none p-4 rounded-xl focus:ring-2 focus:ring-primary focus:bg-white transition-all font-medium"
+                        placeholder="Mã số thuế doanh nghiệp/hộ KD"
+                      />
+                    </div>
                   </div>
 
                   <div>

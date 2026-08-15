@@ -27,7 +27,7 @@ public class CartController {
     }
 
     @PutMapping("/update/{variantId}")
-    public ResponseEntity<List<CartItemResponse>> updateQuantity(@PathVariable Long variantId, @RequestParam Integer quantity) {
+    public ResponseEntity<List<CartItemResponse>> updateQuantity(@PathVariable Long variantId, @RequestParam Double quantity) {
         return ResponseEntity.ok(cartService.updateQuantity(variantId, quantity));
     }
 

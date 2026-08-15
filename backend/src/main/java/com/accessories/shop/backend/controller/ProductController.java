@@ -13,8 +13,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
@@ -30,8 +28,9 @@ public class ProductController {
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) Boolean isFeatured,
+            @RequestParam(required = false, defaultValue = "false") Boolean includeInactive,
             Pageable pageable) {
-        Page<Product> productPage = productService.getAllProducts(search, category, minPrice, maxPrice, isFeatured, pageable);
+        Page<Product> productPage = productService.getAllProducts(search, category, minPrice, maxPrice, isFeatured, includeInactive, pageable);
         return ResponseEntity.ok(productPage.map(productMapper::toResponse));
     }
 
@@ -45,6 +44,11 @@ public class ProductController {
     public ResponseEntity<ProductResponse> getProductBySlug(@PathVariable String slug) {
         Product product = productService.getProductBySlug(slug);
         return ResponseEntity.ok(productMapper.toResponse(product));
+    }
+
+    @GetMapping("/max-price")
+    public ResponseEntity<java.math.BigDecimal> getMaxPrice() {
+        return ResponseEntity.ok(productService.getMaxPrice());
     }
 
     // Tạo sản phẩm: POST http://localhost:8080/api/v1/products

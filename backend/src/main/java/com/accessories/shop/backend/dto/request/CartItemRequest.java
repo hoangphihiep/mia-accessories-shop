@@ -8,5 +8,5 @@ import lombok.*;
 @AllArgsConstructor
 public class CartItemRequest {
     private Long variantId;
-    private Integer quantity;
+    private Double quantity;
 }

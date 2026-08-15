@@ -29,7 +29,7 @@ public class CartItem {
     private ProductVariant productVariant;
 
     @Column(nullable = false)
-    private Integer quantity;
+    private Double quantity;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

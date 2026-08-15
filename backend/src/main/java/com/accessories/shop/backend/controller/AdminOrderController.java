@@ -32,7 +32,9 @@ public class AdminOrderController {
     @PutMapping("/{id}/status")
     public ResponseEntity<OrderResponse> updateOrderStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
         String status = payload.get("status");
-        Order order = orderService.updateOrderStatus(id, status);
+        String expectedDateStr = payload.get("expectedDate");
+        String trackingCode = payload.get("trackingCode");
+        Order order = orderService.updateOrderStatus(id, status, expectedDateStr, trackingCode);
         return ResponseEntity.ok(orderMapper.toResponse(order));
     }
 

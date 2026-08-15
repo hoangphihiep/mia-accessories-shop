@@ -15,8 +15,5 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     Optional<Product> findBySlug(String slug);
     
     @EntityGraph(attributePaths = {"variants", "category", "images"})
-    List<Product> findByNameContainingIgnoreCase(String name);
-    
-    @EntityGraph(attributePaths = {"variants", "category", "images"})
     List<Product> findAll();
 }

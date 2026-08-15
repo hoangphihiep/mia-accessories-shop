@@ -57,7 +57,7 @@ export default function AdminCollections() {
       setLoading(true);
       const [colRes, prodRes] = await Promise.all([
         api.get('/collections'),
-        api.get('/products')
+        api.get('/products?size=1000&includeInactive=true')
       ]);
       setCollections(colRes.data);
       setProducts(prodRes.data.content || prodRes.data); // Handle paginated or list response

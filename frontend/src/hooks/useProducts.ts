@@ -34,3 +34,12 @@ export const useFeaturedProducts = (size: number = 4) => {
     queryFn: () => ProductService.getFeaturedProducts(size),
   });
 };
+
+// Custom Hook lấy giá sản phẩm cao nhất
+export const useMaxPrice = () => {
+  return useQuery({
+    queryKey: ['products', 'max-price'],
+    queryFn: () => ProductService.getMaxPrice(),
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour to prevent unnecessary requests
+  });
+};

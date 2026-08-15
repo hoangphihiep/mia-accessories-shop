@@ -1,5 +1,6 @@
 package com.accessories.shop.backend.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+@Slf4j
 @Service
 public class VNPayService {
     @Value("${vnpay.pay-url}")
@@ -65,9 +67,9 @@ public class VNPayService {
             while (itr.hasNext()) {
                 String fieldName = itr.next();
                 String fieldValue = vnp_Params.get(fieldName);
-                if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                    hashData.append(fieldName).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-                    query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString())).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+                if ((fieldValue != null) && (!fieldValue.isEmpty())) {
+                    hashData.append(fieldName).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
+                    query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII)).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
                     if (itr.hasNext()) {
                         query.append('&');
                         hashData.append('&');
@@ -75,7 +77,7 @@ public class VNPayService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error building VNPay payment URL", e);
         }
 
         String queryUrl = query.toString();
@@ -99,15 +101,15 @@ public class VNPayService {
             while (itr.hasNext()) {
                 String fieldName = itr.next();
                 String fieldValue = params.get(fieldName);
-                if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                    hashData.append(fieldName).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+                if ((fieldValue != null) && (!fieldValue.isEmpty())) {
+                    hashData.append(fieldName).append('=').append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII));
                     if (itr.hasNext()) {
                         hashData.append('&');
                     }
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error verifying VNPay signature", e);
             return false;
         }
 

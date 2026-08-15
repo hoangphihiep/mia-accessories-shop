@@ -32,6 +32,7 @@ public class CategoryService {
     public Category createCategory(CategoryRequest request) {
         Category category = new Category();
         category.setName(request.getName());
+        category.setDescription(request.getDescription());
         category.setStatus(request.getStatus() != null ? request.getStatus() : true);
         
         String slug = (request.getSlug() == null || request.getSlug().trim().isEmpty()) 
@@ -56,6 +57,7 @@ public class CategoryService {
         Category category = getCategoryById(id);
         
         category.setName(request.getName());
+        category.setDescription(request.getDescription());
         if (request.getStatus() != null) {
             category.setStatus(request.getStatus());
         }

@@ -14,7 +14,7 @@ import org.springframework.data.repository.query.Param;
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByProductIdAndIsActiveTrue(Long productId);
-    List<Review> findByUserId(Long userId);
+
     boolean existsByUserIdAndProductId(Long userId, Long productId);
 
     Page<Review> findAll(Pageable pageable);

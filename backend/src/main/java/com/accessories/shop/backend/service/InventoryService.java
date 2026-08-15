@@ -45,12 +45,21 @@ public class InventoryService {
         User user = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
 
-        Supplier supplierEntity = supplierRepository.findById(request.getSupplierId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Nhà cung cấp"));
+        boolean isManufactured = "MANUFACTURED".equals(request.getType());
+        Supplier supplierEntity = null;
+
+        if (!isManufactured) {
+            if (request.getSupplierId() == null) {
+                throw new IllegalArgumentException("Vui lòng chọn nhà cung cấp cho phiếu nhập NCC");
+            }
+            supplierEntity = supplierRepository.findById(request.getSupplierId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Nhà cung cấp"));
+        }
 
         InventoryReceipt receipt = InventoryReceipt.builder()
                 .createdBy(user)
-                .supplier(supplierEntity.getName())
+                .receiptType(request.getType() != null ? request.getType() : "IMPORTED")
+                .supplier(supplierEntity != null ? supplierEntity.getName() : null)
                 .supplierEntity(supplierEntity)
                 .details(new ArrayList<>())
                 .build();
@@ -61,11 +70,15 @@ public class InventoryService {
             ProductVariant variant = productVariantRepository.findById(reqDetail.getVariantId())
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy biến thể sản phẩm"));
 
+            if (isManufactured) {
+                deductRawMaterials(variant, reqDetail.getQuantity());
+            }
+
             // Tính toán giá vốn bình quân gia quyền (MAC)
-            int currentStock = variant.getStockQuantity() != null ? variant.getStockQuantity() : 0;
+            double currentStock = variant.getStockQuantity() != null ? variant.getStockQuantity() : 0.0;
             BigDecimal currentCost = variant.getCostPrice() != null ? variant.getCostPrice() : BigDecimal.ZERO;
             
-            int incomingQty = reqDetail.getQuantity();
+            double incomingQty = reqDetail.getQuantity();
             BigDecimal incomingPrice = reqDetail.getUnitPrice();
 
             if (currentStock <= 0) {
@@ -102,10 +115,29 @@ public class InventoryService {
 
         receipt.setTotalCost(totalCost);
 
-        // Cộng nợ cho nhà cung cấp
-        supplierEntity.setDebt(supplierEntity.getDebt().add(totalCost));
-        supplierRepository.save(supplierEntity);
+        if (!isManufactured && supplierEntity != null) {
+            // Cộng nợ cho nhà cung cấp
+            supplierEntity.setDebt(supplierEntity.getDebt().add(totalCost));
+            supplierRepository.save(supplierEntity);
+        }
 
         return inventoryReceiptRepository.save(receipt);
+    }
+
+    private void deductRawMaterials(ProductVariant variant, double manufacturedQuantity) {
+        if (variant.getRawMaterials() == null) return;
+
+        for (com.accessories.shop.backend.entity.VariantRawMaterial vrm : variant.getRawMaterials()) {
+            ProductVariant rm = vrm.getMaterialVariant();
+            double requiredQty = vrm.getQuantity().doubleValue() * manufacturedQuantity;
+            double currentQty = rm.getStockQuantity() != null ? rm.getStockQuantity() : 0.0;
+            
+            if (currentQty < requiredQty) {
+                throw new IllegalArgumentException("Không đủ nguyên liệu: " + rm.getName() + 
+                        ". Cần: " + requiredQty + ", Tồn kho: " + currentQty);
+            }
+            rm.setStockQuantity(currentQty - requiredQty);
+            productVariantRepository.save(rm);
+        }
     }
 }
